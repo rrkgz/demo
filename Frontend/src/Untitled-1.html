@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablero Clínico de Citas - VET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Definición de variables CSS personalizadas para un aspecto más "manual" */
+        :root {
+            --color-primary: #15b79d; /* Un verde-agua distinto */
+            --color-secondary: #0e7490; /* Azul petróleo */
+            --bg-page: #f9f9fb;
+            --font-main: 'Inter', sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        body { 
+            font-family: var(--font-main); 
+            background-color: var(--bg-page);
+        }
+        
+        /* Contenedor principal del grid de horario, asegurando scroll horizontal para la vista semanal en móvil */
+        .grid-agenda-wrapper {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        /* Estilos de la rejilla de horario, ajustando el grid-template-columns manualmente */
+        .schedule-grid-manual {
+            display: grid;
+            /* 1ra col fija de tiempo, 7 cols flexibles de días, con un ancho mínimo de 120px */
+            grid-template-columns: 80px repeat(7, minmax(120px, 1fr)); 
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            min-width: 960px; /* Ancho mínimo para forzar el scroll horizontal en pantallas pequeñas */
+        }
+
+        /* Celdas generales */
+        .grid-cell {
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* Cambio para que los slots se alineen al inicio */
+            justify-content: flex-start;
+            text-align: center;
+            font-size: 0.875rem;
+            background-color: #fff;
+            min-height: 55px; /* Ligeramente más alto */
+        }
+        
+        .header-cell {
+            background-color: #f0fdf4; /* Verde muy claro */
+            font-weight: 700;
+            color: var(--color-secondary); 
+            text-transform: uppercase;
+        }
+
+        .time-label-cell {
+            background-color: #f7f9fc;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        /* Estilo de la Cita (Slot) - Color basado en la variable primary */
+        .cita-bloque-manual {
+            background-color: color-mix(in srgb, var(--color-primary) 15%, transparent); /* Usando color-mix (como humano, si es un dev moderno) */
+            border-left: 4px solid var(--color-primary); 
+            border-radius: 0.375rem;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.75rem; /* Ajuste en tamaño de fuente */
+            color: #065f46;
+            font-weight: 600;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out; /* 'all' en lugar de selectivos */
+            overflow: hidden;
+            line-height: 1.2;
+            text-align: left;
+            margin-bottom: 4px; /* Pequeño margen entre slots */
+        }
+
+        .cita-bloque-manual:hover {
+            transform: translateY(-2px); /* Un hover diferente: subir ligeramente */
+            box-shadow: 0 4px 10px rgba(21, 183, 157, 0.4); 
+        }
+        
+        .cita-bloque-manual .pet-info-name {
+            font-size: 0.85rem;
+            font-weight: 800; /* Extra bold para el nombre */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            color: var(--color-secondary);
+        }
+
+        .cita-bloque-manual .vet-data {
+            font-size: 0.68rem;
+            color: #047857;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        /* Icono de mascota diferente - más específico y CSS puro si es posible */
+        .icon-patita {
+            display: inline-block;
+            margin-right: 4px;
+            color: var(--color-primary);
+        }
+        .icon-patita::before {
+            content: "\2764"; /* Corazón para un toque único */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container" class="min-h-screen p-4 sm:p-8">
+        </div>
+
+    <script>
+        // Declaramos la aplicación en un objeto global para simular modularidad o namespacing
+        const VET_APP = (function() {
+
+            // --- Estructura de Datos (Manual/Hardcoded para el ejemplo) ---
+            const DOCTORES = [
+                { id: 1, nombre: "Dr. Elena Rojas", especialidad: "Medicina Preventiva" },
+                { id: 2, nombre: "Dr. Camilo Soto", especialidad: "Cirugía Ortopédica" },
+                { id: 3, nombre: "Dra. Sofía Mora", especialidad: "Dermatología" },
+                { id: 4, nombre: "Dr. Marcos Díaz", especialidad: "Odontología" }
+            ];
+
+            const RAN_HORARIOS = [
+                "09:00", "10:00", "11:00", "12:00", 
+                "14:30", "15:30", "16:30", "17:30", "18:30" // Horarios más atípicos (30 minutos)
+            ];
+            
+            const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+            // Simulación de una base de datos de citas
+            let _citasReservadas = [];
+            let _estadoMensaje = null; // Uso de un prefijo "_" para simular una variable interna
+
+            // --- Lógicas Auxiliares ---
+            
+            /**
+             * Obtiene la fecha de hoy en formato 'YYYY-MM-DD'. 
+             * @returns {string} Fecha de hoy.
+             */
+            function obtenerFechaHoy() {
+                // Usamos una función específica, aunque simple, para denotar su propósito
+                return new Date().toISOString().split('T')[0];
+            }
+
+            /**
+             * Mapea una fecha a su día de la semana en español.
+             * @param {string} fechaString - Fecha en formato 'YYYY-MM-DD'.
+             * @returns {string} Nombre del día.
+             */
+            function obtenerNombreDia(fechaString) {
+                const fecha = new Date(fechaString + 'T00:00:00'); // Aseguramos no DST/TZ issues
+                const indiceDia = fecha.getDay(); // 0 = Domingo, 1 = Lunes, etc.
+                // Ajuste manual: Lunes (1) -> 0, Domingo (0) -> 6
+                return DIAS_SEMANA[(indiceDia + 6) % 7]; 
+            }
+
+            // --- Generación de HTML (View Functions) ---
+
+            function generarBloqueMensaje() {
+                if (!_estadoMensaje) return '';
+
+                const iconoSVG = _estadoMensaje.tipo === 'ok' ? 
+                    `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : 
+                    `<svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+                const clasesTipo = _estadoMensaje.tipo === 'ok' ? 
+                    'bg-green-50 text-green-800 border-green-500' : 
+                    'bg-red-50 text-red-800 border-red-500';
+
+                return `
+                    <div role="alert" class="p-4 rounded-lg flex items-center mb-6 shadow-md border-l-4 ${clasesTipo}">
+                        ${iconoSVG}
+                        <p class="font-medium">${_estadoMensaje.texto}</p>
+                    </div>
+                `;
+            }
+
+            /**
+             * Convierte un objeto de cita a su representación visual en HTML.
+             * @param {object} cita - Objeto de cita.
+             * @returns {string} HTML del slot.
+             */
+            function renderizarSlotCita(cita) {
+                const tituloCompleto = `${cita.nombreMascota} | ${cita.nombreDoc} (${cita.especialidadDoc}) el ${cita.fecha} a las ${cita.hora}`;
+                return `
+                    <div class="cita-bloque-manual" title="${tituloCompleto}">
+                        <p class="pet-info-name"><span class="icon-patita"></span> ${cita.nombreMascota}</p>
+                        <p class="vet-data">Dr(a). ${cita.nombreDoc.split(' ')[1]} (${cita.especialidadDoc.substring(0, 3)}.)</p>
+                    </div>
+                `;
+            }
+
+            /**
+             * Agrupa las citas existentes por Día y Hora.
+             * @returns {object} Grid de citas {Dia: {Hora: [citas]}}.
+             */
+            function mapearCitasACuadrícula() {
+                const cuadrilla = {};
+                DIAS_SEMANA.forEach(d => {
+                    cuadrilla[d] = {};
+                    RAN_HORARIOS.forEach(h => {
+                        cuadrilla[d][h] = []; 
+                    });
+                });
+
+                _citasReservadas.forEach(c => {
+                    const nombreDia = obtenerNombreDia(c.fecha);
+                    // Solo agregamos si es un día/hora que monitoreamos (robustez)
+                    if (cuadrilla[nombreDia] && cuadrilla[nombreDia][c.hora]) {
+                        cuadrilla[nombreDia][c.hora].push(c);
+                    }
+                });
+                return cuadrilla;
+            }
+
+            function renderizarCuadriculaHorario() {
+                const citasPorSlot = mapearCitasACuadrícula();
+                let contenidoGrid = '';
+
+                // Headers (Vacío + Días)
+                const encabezadosDias = DIAS_SEMANA.map(dia => 
+                    `<div class="grid-cell header-cell">${dia}</div>`
+                ).join('');
+                contenidoGrid += `<div class="grid-cell header-cell">Tiempo</div>${encabezadosDias}`;
+
+                // Filas de Horas
+                RAN_HORARIOS.forEach(hora => {
+                    contenidoGrid += `<div class="grid-cell time-label-cell">${hora}</div>`; 
+
+                    DIAS_SEMANA.forEach(dia => {
+                        const citasEnSlot = citasPorSlot[dia] ? citasPorSlot[dia][hora] : [];
+                        
+                        const slotsHTML = citasEnSlot.map(renderizarSlotCita).join('');
+
+                        contenidoGrid += `
+                            <div class="grid-cell">
+                                ${slotsHTML}
+                            </div>
+                        `;
+                    });
+                });
+
+                return `<div class="schedule-grid-manual">${contenidoGrid}</div>`;
+            }
+
+            function renderizarSeccionCitas() {
+                if (_citasReservadas.length === 0) {
+                    return `
+                        <div class="text-center py-10 text-gray-500 border border-dashed rounded-lg bg-gray-50">
+                            <svg class="w-8 h-8 mx-auto mb-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2h-4M9 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <p class="text-lg font-bold text-gray-700">¡Agenda vacía! </p>
+                            <p class="text-sm">No hay citas registradas en el sistema. ¡Añade una ahora!</p>
+                        </div>
+                    `;
+                }
+
+                return `<div class="grid-agenda-wrapper">${renderizarCuadriculaHorario()}</div>`;
+            }
+
+            // --- Controladores (Event Handlers) ---
+            
+            /**
+             * Muestra un mensaje temporal en la interfaz y dispara el re-render.
+             * @param {string} texto - Contenido del mensaje.
+             * @param {string} tipo - 'ok' o 'error'.
+             */
+            function mostrarMensaje(texto, tipo) {
+                _estadoMensaje = { texto, tipo };
+                VET_APP.renderizar(); 
+
+                // Un tiempo más corto para simular menos "perfección"
+                setTimeout(() => {
+                    _estadoMensaje = null;
+                    VET_APP.renderizar(); 
+                }, 3500);
+            }
+
+            /**
+             * Lógica principal para agendar una cita.
+             * @param {Event} e - Evento de submit del formulario.
+             */
+            function manejarAgendamiento(e) {
+                e.preventDefault();
+
+                // Acceso directo a los elementos del DOM (típico de JS vanilla)
+                const dateInput = document.getElementById('fecha-cita');
+                const timeInput = document.getElementById('hora-cita');
+                const vetInput = document.getElementById('doc-id');
+                const petNameInput = document.getElementById('nombre-mascota');
+
+                const fechaSeleccionada = dateInput.value;
+                const horaSeleccionada = timeInput.value;
+                const vetIdSeleccionado = parseInt(vetInput.value);
+                const nombreMascota = petNameInput.value.trim();
+
+                if (!fechaSeleccionada || !horaSeleccionada || !vetIdSeleccionado || !nombreMascota) {
+                    mostrarMensaje("Faltan datos clave: ¡Revisa la Mascota, Fecha, Hora y Veterinario!", 'error');
+                    return;
+                }
+                
+                const doctor = DOCTORES.find(v => v.id === vetIdSeleccionado);
+                if (!doctor) {
+                    mostrarMensaje("Error interno: Veterinario no encontrado.", 'error');
+                    return;
+                }
+
+                const nuevaCita = {
+                    id: crypto.randomUUID(), // Usando una API moderna para un ID más "profesional"
+                    fecha: fechaSeleccionada,
+                    hora: horaSeleccionada,
+                    nombreDoc: doctor.nombre,
+                    especialidadDoc: doctor.especialidad,
+                    diaSemana: obtenerNombreDia(fechaSeleccionada),
+                    vetId: vetIdSeleccionado,
+                    nombreMascota: nombreMascota
+                };
+
+                // Lógica de validación
+                const tieneConflicto = _citasReservadas.some(
+                    (cita) => cita.fecha === nuevaCita.fecha &&
+                               cita.hora === nuevaCita.hora &&
+                               cita.vetId === nuevaCita.vetId
+                );
+
+                if (tieneConflicto) {
+                    mostrarMensaje(`¡ATENCIÓN! El ${doctor.nombre} ya está reservado para ${nuevaCita.fecha} a las ${nuevaCita.hora}. Prueba otra hora.`, 'error');
+                    return;
+                }
+
+                // Guardar la cita y re-ordenar por fecha/hora (detallado)
+                _citasReservadas.push(nuevaCita);
+                _citasReservadas.sort((a, b) => {
+                    const momentoA = new Date(`${a.fecha}T${a.hora}:00`);
+                    const momentoB = new Date(`${b.fecha}T${b.hora}:00`);
+                    return momentoA - momentoB;
+                });
+                
+                petNameInput.value = ''; // Limpiar solo el campo de la mascota para el siguiente ingreso.
+
+                mostrarMensaje(`¡Cita OK! ${nombreMascota} con ${doctor.nombre.split(' ')[1]} agendado.`, 'ok');
+            }
+
+            // --- Función de Renderizado Público ---
+
+            function renderizarUI() {
+                const appDiv = document.getElementById('app-container');
+                const hoy = obtenerFechaHoy();
+
+                const contenidoHTML = `
+                    <div class="max-w-6xl mx-auto"> 
+                        <header class="text-center mb-10">
+                            <h1 class="text-4xl font-extrabold text-[var(--color-secondary)]">🐾 Tablero de Citas PetCare 🐾</h1>
+                            <p class="text-lg text-gray-500 mt-2">Gestión Modular de Horarios Clínicos</p>
+                        </header>
+
+                        ${generarBloqueMensaje()}
+
+                        <section class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl mb-10 border border-gray-100">
+                            <h2 class="text-2xl font-bold text-gray-700 mb-6 border-b-2 pb-2 border-[var(--color-primary)]/50">1. Registrar Nueva Visita</h2>
+                            
+                            <form id="form-registro-cita" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                
+                                <div>
+                                    <label for="nombre-mascota" class="block text-sm font-medium text-gray-600 mb-2 flex items-center">
+                                        <span class="icon-patita text-xl mr-2"></span> Nombre del Paciente
+                                    </label>
+                                    <input
+                                        id="nombre-mascota"
+                                        type="text"
+                                        placeholder="Ej: Fido, Pelusa (Requerido)"
+                                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label for="fecha-cita" class="block text-sm font-medium text-gray-600 mb-2">🗓️ Fecha</label>
+                                    <input
+                                        id="fecha-cita"
+                                        type="date"
+                                        min="${hoy}"
+                                        value="${hoy}"
+                                        class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label for="hora-cita" class="block text-sm font-medium text-gray-600 mb-2">⏱️ Hora</label>
+                                    <select
+                                        id="hora-cita"
+                                        class="w-full p-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] appearance-none"
+                                        required
+                                    >
+                                        ${RAN_HORARIOS.map(time => `<option value="${time}">${time}</option>`).join('')}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="doc-id" class="block text-sm font-medium text-gray-600 mb-2">👨‍⚕️ Veterinario Asignado</label>
+                                    <select
+                                        id="doc-id"
+                                        class="w-full p-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] appearance-none"
+                                        required
+                                    >
+                                        <option value="" disabled selected>-- Selecciona --</option>
+                                        ${DOCTORES.map(vet => `<option value="${vet.id}">${vet.nombre} (${vet.especialidad})</option>`).join('')}
+                                    </select>
+                                </div>
+                                
+                                <div class="md:col-span-4 pt-4">
+                                    <button
+                                        type="submit"
+                                        class="w-full bg-[var(--color-primary)] hover:bg-opacity-90 text-white font-semibold py-3 rounded-lg shadow-md transition duration-300 transform hover:translate-y-[-1px] focus:ring-4 focus:ring-[var(--color-primary)] focus:ring-opacity-50"
+                                    >
+                                        AGENDAR CITA
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <section class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
+                            <h2 class="text-2xl font-bold text-gray-700 mb-6 border-b-2 pb-2 border-[var(--color-primary)]/50">2. Horario Clínico Semanal</h2>
+                            
+                            ${renderizarSeccionCitas()}
+                        </section>
+                    </div>
+                `;
+                
+                appDiv.innerHTML = contenidoHTML;
+                
+                // Re-adjuntar el listener después de actualizar el DOM (Crucial en vanilla JS SPA)
+                const formElement = document.getElementById('form-registro-cita');
+                if (formElement) {
+                    formElement.addEventListener('submit', manejarAgendamiento);
+                }
+            }
+            
+            // Exposición de funciones públicas
+            return {
+                renderizar: renderizarUI,
+                DOCTORES: DOCTORES // Exponemos los datos para la inicialización
+            };
+        })();
+
+        // Inicialización de la aplicación al cargar la ventana
+        window.onload = function() {
+            // Inicializar las listas desplegables (un toque extra de limpieza manual)
+            const vetSelect = document.getElementById('doc-id');
+            if (vetSelect) {
+                // Seleccionar el primer doctor por defecto
+                vetSelect.value = VET_APP.DOCTORES[0]?.id || ''; 
+            }
+
+            VET_APP.renderizar(); // Inicia el renderizado de la UI
+        };
+
+    </script>
+</body>
+</html>
