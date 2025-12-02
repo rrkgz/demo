@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, type FormEvent, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, type FormEvent } from 'react';
 
 
 interface Doctor {
