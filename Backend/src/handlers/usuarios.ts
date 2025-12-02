@@ -96,7 +96,8 @@ export const modificarUsuario = async (request: Request, response: Response) => 
             return;
         }
         if (password) {
-            usuario.password = password;
+            // aseguramos hash al actualizar contraseña
+            usuario.password = await bcrypt.hash(password, 10);
         }
         await usuario.save();
         response.json({ message: 'Usuario actualizado correctamente' });
@@ -104,3 +105,30 @@ export const modificarUsuario = async (request: Request, response: Response) => 
         response.status(500).json({ error: 'Error al modificar usuario' });
     }
 };
+
+// Cambiar contraseña del usuario autenticado
+export const cambiarPassword = async (request: Request, response: Response) => {
+    try {
+        const user = (request as any).user as { email: string };
+        const { actualPassword, nuevaPassword } = request.body as { actualPassword: string; nuevaPassword: string };
+        if (!actualPassword || !nuevaPassword) {
+            response.status(400).json({ error: 'Parámetros incompletos' });
+            return;
+        }
+        const usuario = await Usuario.findByPk(user.email);
+        if (!usuario) {
+            response.status(404).json({ error: 'Usuario no encontrado' });
+            return;
+        }
+        const ok = await bcrypt.compare(actualPassword, usuario.password);
+        if (!ok) {
+            response.status(401).json({ error: 'Contraseña actual incorrecta' });
+            return;
+        }
+        usuario.password = await bcrypt.hash(nuevaPassword, 10);
+        await usuario.save();
+        response.json({ message: 'Contraseña actualizada' });
+    } catch (error) {
+        response.status(500).json({ error: 'Error al cambiar contraseña' });
+    }
+}

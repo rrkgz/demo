@@ -23,11 +23,25 @@ export default function NavBar() {
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0 gap-2">
             <li className="nav-item">
-              <NavLink to="/arriendos-activos" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
-                <span className="bi bi-lightning-charge me-1"></span>
-                Arriendos Activos
+              <NavLink to="/admin" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
+                <span className="bi bi-people me-1"></span>
+                Usuarios
               </NavLink>
             </li>
+            <li className="nav-item">
+              <NavLink to="/cambiar-pass" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
+                <span className="bi bi-key me-1"></span>
+                Cambiar Contraseña
+              </NavLink>
+            </li>
+        </ul>
+        <ul className="navbar-nav ms-auto">
+          <li className="nav-item">
+            <button onClick={() => { localStorage.removeItem('token'); window.location.href = '/iniciar-sesion'; }} className="btn btn-outline-light btn-sm">
+              <span className="bi bi-box-arrow-right me-1"></span>
+              Cerrar Sesión
+            </button>
+          </li>
         </ul>
         </div>
       </div>

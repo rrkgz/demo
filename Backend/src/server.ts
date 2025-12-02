@@ -7,25 +7,15 @@ dotenv.config();
 
 const server = express(); 
 
-const corsOptions: CorsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || origin === process.env.FRONTEND_URL) {
-      callback(null, true);
-    } else {
-      callback(new Error("Error de CORS"), false);
-    }
-  },
-  credentials: true, // Si usas cookies o headers personalizados
-};
-server.use(cors(corsOptions));
+// CORS simplificado para desarrollo
+server.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 server.use(express.json());
 
-// Ruta directa
-server.post('/crear-cuenta', (req, res) => {
-  const { email, password } = req.body;
-  res.status(201).json({ mensaje: 'Usuario creado exitosamente' });
-});
+// Eliminar rutas directas duplicadas; usar únicamente router /api
 
 // Conectar base de datos
 async function conectarBD() {

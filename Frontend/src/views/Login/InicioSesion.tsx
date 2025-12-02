@@ -23,7 +23,7 @@ export default function InicioSesion() {
 				return;
 			}
 			localStorage.setItem('token', data.token);
-			navigate('/');
+			navigate('/menu-principal');
 		} catch (err) {
 			setError('Error de red o servidor');
 		}
@@ -66,8 +66,7 @@ export default function InicioSesion() {
           {error && <p style={{ color: "red" }}>{error}</p>}
         </form>
         <div className="text-center mt-3">
-          <Link to="/cambiar-pass" className="small text-decoration-none text-primary-emphasis">Cambiar contraseña  /  </Link>
-          <Link to="/crear-cuenta" className="small text-decoration-none text-primary-emphasis">  Crear cuenta  </Link>
+          <Link to="/crear-cuenta" className="small text-decoration-none text-primary-emphasis">Crear cuenta</Link>
         </div>
       </div>
     </div>
