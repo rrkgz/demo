@@ -19,13 +19,8 @@ export default function MenuPrincipal() {
               El bienestar de tu mascota, más sano y feliz,  <span style={{ color: '#7b2cbf' }}> con nuestros servicios pensados para ellos.</span>
             </h2>
             <p className="lead text-muted" style={{ maxWidth: 720 }}>
-              ¡Agenda una cita en nuestra veterinaria!
+              Bienvenido a nuestra veterinaria. Estamos aquí para cuidar de tu mascota.
             </p>
-            <div className="d-flex align-items-center gap-3 flex-wrap mt-3">
-              <Link to="/agendar-citas" className="btn btn-primary btn-lg" style={{ backgroundColor: '#3b5bdb', borderColor: '#3b5bdb' }}>
-                Agendar cita
-              </Link>
-            </div>
             <ul className="list-unstyled mt-4 text-muted">
               <li className="mb-2"><span className="bi bi-check-circle-fill text-success me-2"></span>Veterinarios de calidad</li>
               <li className="mb-2"><span className="bi bi-check-circle-fill text-success me-2"></span>Ubicados en Villa Alemana</li>
@@ -41,19 +36,6 @@ export default function MenuPrincipal() {
       {/* Accesos rápidos orientados al cliente */}
       <div className="container pb-5">
         <div className="row g-4">
-          <div className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm border-0">
-              <div className="card-body text-center p-4">
-                <div className="mb-3">
-                  <span className="bi bi-calendar-check" style={{ fontSize: 48, color: '#7b2cbf' }}></span>
-                </div>
-                <h5 className="card-title fw-bold">Agendar Cita</h5>
-                <p className="card-text text-muted">Reserva una hora para tu mascota</p>
-                <Link to="/agendar-citas" className="btn btn-outline-primary">Ir</Link>
-              </div>
-            </div>
-          </div>
-
           <div className="col-md-6 col-lg-4">
             <div className="card h-100 shadow-sm border-0">
               <div className="card-body text-center p-4">
@@ -102,6 +84,19 @@ export default function MenuPrincipal() {
                 <h5 className="card-title fw-bold">Mi Cuenta</h5>
                 <p className="card-text text-muted">Actualiza tus datos y contraseña</p>
                 <Link to="/cuenta" className="btn btn-outline-primary">Ir</Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-6 col-lg-4">
+            <div className="card h-100 shadow-sm border-0 border-warning" style={{ borderWidth: '2px !important' }}>
+              <div className="card-body text-center p-4">
+                <div className="mb-3">
+                  <span className="bi bi-shield-lock" style={{ fontSize: 48, color: '#f59e0b' }}></span>
+                </div>
+                <h5 className="card-title fw-bold">Acceso Administrador</h5>
+                <p className="card-text text-muted">Panel de administración</p>
+                <Link to="/iniciar-sesion-admin" className="btn btn-warning">Ingresar</Link>
               </div>
             </div>
           </div>

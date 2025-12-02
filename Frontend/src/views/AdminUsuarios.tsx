@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 export default function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState('');
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('adminToken');
 
   useEffect(() => {
     if (!token) {
