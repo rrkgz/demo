@@ -6,7 +6,8 @@ export default function Layout() {
     const hideNavBar =
         location.pathname === '/iniciar-sesion' ||
         location.pathname === '/crear-cuenta' ||
-        location.pathname === '/cambiar-pass';
+        location.pathname === '/cambiar-pass' ||
+        location.pathname === '/menu-principal';
     return (
         <>
             {!hideNavBar && <NavBar />}

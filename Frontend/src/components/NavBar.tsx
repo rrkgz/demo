@@ -23,15 +23,15 @@ export default function NavBar() {
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0 gap-2">
             <li className="nav-item">
-              <NavLink to="/admin" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
-                <span className="bi bi-people me-1"></span>
-                Usuarios
+              <NavLink to="/menu-principal" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
+                <span className="bi bi-house me-1"></span>
+                Menú Principal
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/cambiar-pass" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
-                <span className="bi bi-key me-1"></span>
-                Cambiar Contraseña
+              <NavLink to="/cuenta" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
+                <span className="bi bi-person me-1"></span>
+                Mi Cuenta
               </NavLink>
             </li>
         </ul>

@@ -7,6 +7,7 @@ import PrivateRoute from "./components/PrivateRouter";
 import AdminUsuarios from "./views/AdminUsuarios";
 import AgendarCitas from "./views/Login/agendarcita";
 import MenuPrincipal from "./views/MenuPrincipal";
+import CuentaUsuario from "./views/CuentaUsuario";
 
 
 //aaaaaaaaa
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
                             {
                                 path: '/menu-principal',
                                 element: <MenuPrincipal />,
+                            },
+                            {
+                                path: '/cuenta',
+                                element: <CuentaUsuario />,
                             },
                             {
                                 path: '/cambiar-pass',
