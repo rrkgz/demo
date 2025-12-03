@@ -12,6 +12,12 @@ import MenuPrincipal from "./views/MenuPrincipal";
 import CuentaUsuario from "./views/CuentaUsuario";
 import PanelAdmin from "./views/PanelAdmin";
 import AdminVeterinarios from "./views/AdminVeterinarios";
+import { GestionClientes } from "./views/GestionCliente";
+import { GestionMascotas } from "./views/GestionMascota";
+import { GestionTratamientos } from "./views/Tratamientos";
+import { CatalogoProductos } from "./views/catalogo";
+import { BoletaVeterinaria } from "./views/Boleta";
+import { ReportesVeterinaria } from "./views/Reporte";
 
 
 //aaaaaaaaa
@@ -54,6 +60,10 @@ export const router = createBrowserRouter([
                                 path: '/cambiar-pass',
                                 element: <CambiarPassword />,
                             },
+                            {
+                                path: '/catalogo',
+                                element: <CatalogoProductos />,
+                            },
                         ],
                     },
                     {
@@ -64,12 +74,32 @@ export const router = createBrowserRouter([
                                 element: <PanelAdmin />,
                             },
                             {
-                                path: '/admin',
+                                path: '/admin/usuarios',
                                 element: <AdminUsuarios />,
                             },
                             {
                                 path: '/admin/veterinarios',
                                 element: <AdminVeterinarios />,
+                            },
+                            {
+                                path: '/admin/clientes',
+                                element: <GestionClientes />,
+                            },
+                            {
+                                path: '/admin/mascotas',
+                                element: <GestionMascotas />,
+                            },
+                            {
+                                path: '/admin/tratamientos',
+                                element: <GestionTratamientos />,
+                            },
+                            {
+                                path: '/admin/boletas',
+                                element: <BoletaVeterinaria />,
+                            },
+                            {
+                                path: '/admin/reportes',
+                                element: <ReportesVeterinaria />,
                             },
                             {
                                 path: '/agendar-citas',

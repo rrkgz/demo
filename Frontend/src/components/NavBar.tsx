@@ -29,6 +29,12 @@ export default function NavBar() {
               </NavLink>
             </li>
             <li className="nav-item">
+              <NavLink to="/catalogo" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
+                <span className="bi bi-bag me-1"></span>
+                Catálogo
+              </NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink to="/cuenta" className={({ isActive }) => `nav-link px-3 rounded-3 fw-semibold ${isActive ? 'bg-white text-primary shadow-sm' : 'text-white'}`}>
                 <span className="bi bi-person me-1"></span>
                 Mi Cuenta
