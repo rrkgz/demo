@@ -5,14 +5,6 @@ import { useNavigate } from 'react-router-dom';
 const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000/api';
 
 
-interface Cita {
-  id_reserva: number;
-  id_mascota: number;
-  id_veterinario: number;
-  id_servicio: number;
-  fecha: string; 
-  hora: string; 
-}
 
 interface Mascota {
   id_mascota: number;
@@ -50,13 +42,6 @@ interface AgendarCitaUsuarioProps {
 }
 
 
-const initialFormData = {
-  id_mascota: '',
-  id_veterinario: '',
-  id_servicio: '',
-  fecha: '',
-  hora: ''
-};
 
 export default function AgendarCitaUsuario({ appointmentId }: AgendarCitaUsuarioProps) {
   const navigate = useNavigate();
@@ -77,7 +62,6 @@ export default function AgendarCitaUsuario({ appointmentId }: AgendarCitaUsuario
 
   const [isEditing, setIsEditing] = useState(!!appointmentId);
 
-  const [formData, setFormData] = useState(initialFormData);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
 

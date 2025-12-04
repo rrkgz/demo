@@ -18,7 +18,7 @@ import { GestionClientes } from "./views/admin/GestionCliente";
 import { GestionMascotas } from "./views/admin/GestionMascota";
 import { GestionTratamientos } from "./views/admin/Tratamientos";
 import { CatalogoProductos } from "./views/usuario/catalogo";
-import { BoletaVeterinaria } from "./views/admin/Boleta";
+import { Boleta } from "./views/admin/Boleta";
 import { ReportesVeterinaria } from "./views/admin/Reporte";
 import Historial from "./views/usuario/historial";
 import HistorialAdmin from "./views/admin/HistorialAdmin";
@@ -111,7 +111,7 @@ export const router = createBrowserRouter([
                             },
                             {
                                 path: '/admin/boletas',
-                                element: <BoletaVeterinaria />,
+                                element: <Boleta />,
                             },
                             {
                                 path: '/admin/reportes',

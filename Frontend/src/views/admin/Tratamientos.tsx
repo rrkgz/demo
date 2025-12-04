@@ -1,308 +1,290 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import React, { useState, useMemo, useRef } from 'react';
 
 
-interface Paciente { 
-  id: number;
-  nombre: string;
-  especie: string; 
-  propietarioId: number;
-}
 
-interface Tratamiento {
+interface VentaReporte {
   id: string; 
-  pacienteId: number;
-  descripcion: string;
-  fechaInicio: string;
+  tipo: 'Tratamiento' | 'Boleta'; 
+  descripcion: string; 
+  fecha: string; 
+  pacienteId?: number; 
+  pacienteNombre?: string; 
   costo: number; 
 }
 
 
-type NuevoTratamiento = Omit<Tratamiento, 'id'>;
+interface ReporteMetricas {
+  ingresoTotal: number;
+  numeroTransacciones: number;
+  servicioMasComun: {
+    descripcion: string;
+    frecuencia: number;
+  } | null;
+}
 
 
-export const GestionTratamientos: React.FC = () => {
-  const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]); 
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
+const mockVentas: VentaReporte[] = [
+ 
+  { id: 'T001', tipo: 'Tratamiento', pacienteId: 1, descripcion: 'Consulta General', fecha: '2025-11-01', costo: 35.00, pacienteNombre: 'Max' },
+  { id: 'T002', tipo: 'Tratamiento', pacienteId: 2, descripcion: 'Vacunación Anual', fecha: '2025-11-05', costo: 45.00, pacienteNombre: 'Bella' },
+  { id: 'T003', tipo: 'Tratamiento', pacienteId: 3, descripcion: 'Consulta General', fecha: '2025-11-10', costo: 35.00, pacienteNombre: 'Rocky' },
+  { id: 'T004', tipo: 'Tratamiento', pacienteId: 1, descripcion: 'Revisión Dental', fecha: '2025-11-15', costo: 78.00, pacienteNombre: 'Max' },
+  { id: 'T005', tipo: 'Tratamiento', pacienteId: 4, descripcion: 'Consulta General', fecha: '2025-12-01', costo: 35.00, pacienteNombre: 'Luna' },
+  { id: 'T006', tipo: 'Tratamiento', pacienteId: 2, descripcion: 'Vacunación Anual', fecha: '2025-12-05', costo: 45.00, pacienteNombre: 'Bella' },
+  { id: 'T007', tipo: 'Tratamiento', pacienteId: 5, descripcion: 'Cirugía Menor', fecha: '2025-12-10', costo: 150.00, pacienteNombre: 'Duke' },
+  { id: 'T008', tipo: 'Tratamiento', pacienteId: 3, descripcion: 'Consulta General', fecha: '2025-12-15', costo: 35.00, pacienteNombre: 'Rocky' },
 
-  const navigate = useNavigate();
+
+  { id: 'B001', tipo: 'Boleta', descripcion: 'Vacuna Séxtuple', fecha: '2025-12-01', costo: 25.00 },
+  { id: 'B002', tipo: 'Boleta', descripcion: 'Vacuna Antirrabica', fecha: '2025-12-03', costo: 18.00 },
+  { id: 'B003', tipo: 'Boleta', descripcion: 'Baño Completo', fecha: '2025-12-03', costo: 8.50 },
+  { id: 'B004', tipo: 'Boleta', descripcion: 'Vacuna Séxtuple', fecha: '2025-12-12', costo: 25.00 },
+  { id: 'B005', tipo: 'Boleta', descripcion: 'Corte de Uñas', fecha: '2025-12-18', costo: 5.00 },
+  { id: 'B006', tipo: 'Boleta', descripcion: 'Baño Completo', fecha: '2025-12-22', costo: 8.50 },
+  { id: 'B007', tipo: 'Boleta', descripcion: 'Saco de Pienso Premium', fecha: '2025-12-24', costo: 45.00 },
+];
+
+
+
+const generarReporte = (
+  ventas: VentaReporte[],
+  fechaInicio: string,
+  fechaFin: string
+): { ventasFiltradas: VentaReporte[], metricas: ReporteMetricas } => {
   
-  const [nuevoTratamiento, setNuevoTratamiento] = useState<NuevoTratamiento>({
-    pacienteId: 0, 
-    descripcion: '',
-    fechaInicio: new Date().toISOString().split('T')[0], 
-    costo: 0,
-  });
-
-
-
-  const getToken = (): string | null => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/iniciar-sesion');
-      alert('Sesión expirada o no iniciada. Por favor, inicie sesión.');
-      return null;
-    }
-    return token;
-  };
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
   
-  const getHeaders = (token: string) => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`, 
-  });
+  const ventasFiltradas = ventas.filter(v => {
+    const fechaVenta = new Date(v.fecha);
   
-  const handleApiError = async (res: Response) => {
-      const errorData = await res.json();
-      throw new Error(errorData.error || `Fallo en la API: ${res.statusText}`);
-  }
-
-
-  const fetchPacientes = async (token: string) => {
-    try {
-      const res = await fetch(`${API_URL}/mascotas`, {
-        method: 'GET',
-        headers: getHeaders(token),
-      });
-
-      if (!res.ok) {
-        await handleApiError(res);
-      }
-
-      const data: Paciente[] = await res.json();
-      setPacientes(data);
-      
-      
-      if (data.length > 0) {
-        setNuevoTratamiento(prev => ({ ...prev, pacienteId: data[0].id }));
-      }
-    } catch (err: any) {
-      console.error("Error al cargar pacientes:", err);
-      setError(err.message || 'Error de red al cargar pacientes');
-    }
-  };
-
-
-  const fetchTratamientos = async (token: string) => {
-    try {
-      const res = await fetch(`${API_URL}/tratamientos`, {
-        method: 'GET',
-        headers: getHeaders(token),
-      });
-
-      if (!res.ok) {
-        await handleApiError(res);
-      }
-
-      const data: Tratamiento[] = await res.json();
-      setTratamientos(data);
-    } catch (err: any) {
-      console.error("Error al cargar tratamientos:", err);
-      setError(err.message || 'Error de red al cargar tratamientos');
-    }
-  };
-  
-
-  useEffect(() => {
-    const token = getToken();
-    if (token) {
-      const loadData = async () => {
-        setError('');
-        setCargando(true);
-     
-        await fetchPacientes(token);
-        await fetchTratamientos(token);
-        setCargando(false);
-      };
-      loadData();
-    } else {
-        setCargando(false);
-    }
-  }, []); 
-
-
-  const registrarTratamiento = async (tratamiento: NuevoTratamiento) => {
-    const token = getToken();
-    if (!token) return;
-
-    try {
-      const res = await fetch(`${API_URL}/tratamientos`, {
-        method: 'POST',
-        headers: getHeaders(token),
-        body: JSON.stringify(tratamiento),
-      });
-
-      if (!res.ok) {
-        await handleApiError(res);
-      }
-
-  
-      const nuevo: Tratamiento = await res.json();
-      setTratamientos(prev => [...prev, nuevo]);
-      
-
-      setNuevoTratamiento(() => ({
-          pacienteId: pacientes[0]?.id || 0,
-          descripcion: '',
-          fechaInicio: new Date().toISOString().split('T')[0],
-          costo: 0,
-      }));
-      alert(`Tratamiento ${nuevo.id} para ${getNombrePaciente(nuevo.pacienteId)} registrado con éxito.`);
-
-    } catch (err: any) {
-      console.error("Error al registrar tratamiento:", err);
-      setError(err.message || 'Error de red o servidor al registrar tratamiento');
-    }
-  };
-
-
-
-  const getNombrePaciente = (pacienteId: number): string => {
-    const paciente = pacientes.find(p => p.id === pacienteId);
-    return paciente ? `${paciente.nombre} (${paciente.especie})` : `Desconocido (ID: ${pacienteId})`;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setNuevoTratamiento(prev => ({
-      ...prev,
     
-      [name]: name === 'costo' || name === 'pacienteId' ? Number(value) : value, 
-    }));
-  };
+    const fechaFinIncluida = new Date(fin);
+    fechaFinIncluida.setDate(fechaFinIncluida.getDate() + 1);
 
+    return fechaVenta >= inicio && fechaVenta < fechaFinIncluida; 
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (nuevoTratamiento.descripcion.trim() === '' || nuevoTratamiento.costo <= 0 || nuevoTratamiento.pacienteId === 0) {
-        alert('Por favor, complete todos los campos requeridos y seleccione un paciente válido.');
-        return;
+  const ingresoTotal = ventasFiltradas.reduce((acc, v) => acc + v.costo, 0);
+
+  const frecuenciaMap = new Map<string, number>();
+  ventasFiltradas.forEach(v => {
+    const descripcion = v.descripcion;
+    frecuenciaMap.set(descripcion, (frecuenciaMap.get(descripcion) || 0) + 1);
+  });
+
+  let servicioMasComun: ReporteMetricas['servicioMasComun'] = null;
+  let maxFrecuencia = 0;
+
+  frecuenciaMap.forEach((frecuencia, descripcion) => {
+    if (frecuencia > maxFrecuencia) {
+      maxFrecuencia = frecuencia;
+      servicioMasComun = { descripcion, frecuencia };
     }
-    registrarTratamiento(nuevoTratamiento);
+  });
+
+  const metricas: ReporteMetricas = {
+    ingresoTotal,
+    numeroTransacciones: ventasFiltradas.length,
+    servicioMasComun,
   };
 
+  return { ventasFiltradas, metricas };
+};
 
 
+
+
+export const App: React.FC = () => {
+  
+  const [fechaInicio, setFechaInicio] = useState<string>('2025-12-01');
+  const [fechaFin, setFechaFin] = useState<string>('2025-12-31');
+  
+  const reporteRef = useRef<HTMLDivElement>(null);
+
+
+  const { ventasFiltradas, metricas } = useMemo(() => {
+    return generarReporte(mockVentas, fechaInicio, fechaFin);
+  }, [fechaInicio, fechaFin]);
+
+  
+  const formatCurrency = (amount: number): string => {
+  
+    return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD', 
+        minimumFractionDigits: 2 
+    }).format(amount);
+  };
+
+  
+  const handleGeneratePDF = async () => {
+    const input = reporteRef.current;
+    
+    // @ts-ignore: Accedemos a html2canvas globalmente
+    const html2canvasGlobal = window.html2canvas;
+    // @ts-ignore: Accedemos a jsPDF globalmente
+    const jsPDFGlobal = window.jsPDF;
+
+
+    if (input && html2canvasGlobal && jsPDFGlobal) {
+      try {
+      
+        const canvas = await html2canvasGlobal(input, {
+          scale: 2, 
+          logging: true,
+          useCORS: true,
+          allowTaint: true, 
+          backgroundColor: '#f9fafb', 
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDFGlobal('p', 'mm', 'a4'); 
+        const imgProps= pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+   
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        
+   
+        pdf.save(`Reporte_Ingresos_Veterinaria_${fechaInicio}_a_${fechaFin}.pdf`);
+      } catch (error) {
+        console.error("Error al generar el PDF:", error);
+     
+        alert("Ocurrió un error al generar el PDF. Asegúrate de que las librerías jsPDF y html2canvas estén cargadas.");
+      }
+    } else {
+        alert("Error: Las librerías para generar PDF no están disponibles o el contenido del reporte no se encontró.");
+    }
+  };
+  
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <header>
-        <h1>🔬 Gestión de Historial Médico y Tratamientos</h1>
-      </header>
-      
-      <hr />
-      {error && <p style={{ color: "red", padding: '10px', border: '1px solid red', borderRadius: '5px' }}>Error: {error}</p>}
-      
-      {cargando ? (
-        <p style={{ textAlign: 'center', fontSize: '1.2em' }}>Cargando datos de pacientes y tratamientos...</p>
-      ) : (
-        <>
-          <section>
-            <h2>➕ Registrar Nuevo Tratamiento</h2>
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '10px', marginBottom: '20px', border: '1px solid #ccc', padding: '15px', borderRadius: '5px' }}>
-              
-              <div>
-                <label htmlFor="pacienteId" style={{ display: 'block', marginBottom: '5px' }}>Paciente:</label>
-                <select
-                  id="pacienteId"
-                  name="pacienteId"
-                  value={nuevoTratamiento.pacienteId}
-                  onChange={handleChange}
-                  required
-                  style={{ width: '100%', padding: '8px' }}
-                  disabled={pacientes.length === 0} // Desactivar si no hay pacientes
-                >
-                  {pacientes.length === 0 ? (
-                      <option value={0}>No hay pacientes disponibles</option>
-                  ) : (
-                      pacientes.map(p => (
-                        <option key={p.id} value={p.id}>{p.nombre} ({p.especie})</option>
-                      ))
-                  )}
-                </select>
-              </div>
+    <div className="min-h-screen bg-gray-100 p-4 md:p-8 font-sans">
+    
+        <h1 className="sr-only">Reporte de Ingresos Veterinarios</h1>
 
-              {/* ... Resto de campos del formulario (Descripción, Fecha, Costo) se mantienen ... */}
-              <div>
-                <label htmlFor="descripcion" style={{ display: 'block', marginBottom: '5px' }}>Descripción:</label>
-                <input
-                  type="text"
-                  id="descripcion"
-                  name="descripcion"
-                  value={nuevoTratamiento.descripcion}
-                  onChange={handleChange}
-                  placeholder="Ej: Cirugía de esterilización"
-                  required
-                  style={{ width: '100%', padding: '8px' }}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="fechaInicio" style={{ display: 'block', marginBottom: '5px' }}>Fecha Inicio:</label>
-                <input
-                  type="date"
-                  id="fechaInicio"
-                  name="fechaInicio"
-                  value={nuevoTratamiento.fechaInicio}
-                  onChange={handleChange}
-                  required
-                  style={{ width: '100%', padding: '8px' }}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="costo" style={{ display: 'block', marginBottom: '5px' }}>Costo (€ / $):</label>
-                <input
-                  type="number"
-                  id="costo"
-                  name="costo"
-                  value={nuevoTratamiento.costo > 0 ? nuevoTratamiento.costo : ''}
-                  onChange={handleChange}
-                  min="0.01"
-                  step="0.01"
-                  required
-                  style={{ width: '100%', padding: '8px' }}
-                />
-              </div>
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8">
+        <header className="text-center mb-6 border-b pb-4">
+          <h1 className="text-3xl font-extrabold text-indigo-700">
+            <i className="fas fa-chart-line mr-3"></i>
+            Generador de Reportes de Ingresos
+          </h1>
+          <p className="text-gray-500">Métricas consolidadas de Tratamientos y Ventas TPV</p>
+        </header>
 
-              <button type="submit" style={{ padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} disabled={pacientes.length === 0}>
-                Registrar Tratamiento
-              </button>
-            </form>
-          </section>
+        {/* Controles de Filtro y PDF */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+          <h3 className="text-lg font-semibold text-indigo-800">Seleccionar Período</h3>
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <label className="text-sm font-medium text-gray-700">
+              Inicio:
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </label>
+            <label className="text-sm font-medium text-gray-700">
+              Fin:
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </label>
+          </div>
+          <button 
+            onClick={handleGeneratePDF} 
+            className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition duration-200 flex items-center"
+          >
+            <i className="fas fa-file-pdf mr-2"></i>
+            Generar PDF
+          </button>
+        </div>
 
-          <hr />
+        {/* 3. Contenido del Reporte (Envuelto para PDF) */}
+        <div ref={reporteRef} className="p-4 md:p-6 bg-white">
+          
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 pt-4 border-t border-gray-200">
+            📊 Metricas del Período ({fechaInicio} al {fechaFin})
+          </h2>
+          
+          {/* Grid de Métricas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            
+            <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 shadow-md">
+              <p className="text-sm text-gray-600 font-semibold">💰 Ingreso Total</p>
+              <p className="text-3xl font-extrabold text-blue-700 mt-1">{formatCurrency(metricas.ingresoTotal)}</p>
+            </div>
+            
+            <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500 shadow-md">
+              <p className="text-sm text-gray-600 font-semibold"># Transacciones</p>
+              <p className="text-3xl font-extrabold text-yellow-700 mt-1">{metricas.numeroTransacciones}</p>
+            </div>
+            
+            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 shadow-md">
+              <p className="text-sm text-gray-600 font-semibold">🏅 Servicio Más Común</p>
+              <p className="text-xl font-bold text-green-700 mt-1 truncate">
+                {metricas.servicioMasComun 
+                  ? `${metricas.servicioMasComun.descripcion} (${metricas.servicioMasComun.frecuencia} veces)` 
+                  : 'N/A'
+                }
+              </p>
+            </div>
+          </div>
 
-          <section>
-            <h2> Lista de Tratamientos Registrados </h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f2f2f2' }}>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Paciente</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Descripción</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Fecha</th>
-                  <th style={{ border: '1px solid #ddd', padding: '8px' }}>Costo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tratamientos.map(t => (
-                  <tr key={t.id}>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{t.id}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>**{getNombrePaciente(t.pacienteId)}**</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{t.descripcion}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{t.fechaInicio}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{t.costo.toFixed(2)}</td>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 pt-4 border-t border-gray-200">
+            📋 Detalle de Ingresos (Tratamientos y Boletas)
+          </h2>
+          
+          {ventasFiltradas.length === 0 ? (
+            <p className="text-center text-gray-500 p-8 bg-gray-50 rounded-lg">
+              No se encontraron ingresos en el rango de fechas seleccionado.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-indigo-600 text-white">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Tipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Descripción</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Paciente</th>
+                    <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider">Monto</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {tratamientos.length === 0 && <p style={{ textAlign: 'center', marginTop: '10px' }}>No hay tratamientos registrados.</p>}
-          </section>
-        </>
-      )}
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {ventasFiltradas.map((venta) => (
+                    <tr key={venta.id} className="hover:bg-gray-50 transition duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{venta.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          ${venta.tipo === 'Tratamiento' ? 'bg-indigo-100 text-indigo-800' : 'bg-green-100 text-green-800'}`}>
+                          {venta.tipo}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{venta.fecha}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{venta.descripcion}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {venta.pacienteNombre || 'Venta TPV'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-800">
+                        {formatCurrency(venta.costo)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div> 
+      </div>
     </div>
   );
 };
+
+export default App;
