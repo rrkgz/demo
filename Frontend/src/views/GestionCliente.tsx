@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 
 interface Cliente {
@@ -10,26 +13,12 @@ interface Cliente {
   direccion: string;
 }
 
-
-interface NuevoCliente {
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-}
-
-
-
-const clientesMock: Cliente[] = [
-  { id: 101, nombre: 'Andrea', apellido: 'Rojas', email: 'andrea.r@mail.com', telefono: '555-1234', direccion: 'Calle Falsa 123' },
-  { id: 102, nombre: 'Javier', apellido: 'Soto', email: 'javier.s@mail.com', telefono: '555-5678', direccion: 'Av. Siempre Viva 742' },
-];
-
-
+type NuevoCliente = Omit<Cliente, 'id'>;
 
 export const GestionClientes: React.FC = () => {
-  const [clientes, setClientes] = useState<Cliente[]>(clientesMock);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
   const [nuevoCliente, setNuevoCliente] = useState<NuevoCliente>({
     nombre: '',
     apellido: '',
@@ -37,7 +26,99 @@ export const GestionClientes: React.FC = () => {
     telefono: '',
     direccion: '',
   });
+  const navigate = useNavigate();
 
+  // Función para obtener el token y manejar la no autenticación
+  const getToken = (): string | null => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Redirigir si no hay token (no autenticado)
+      navigate('/iniciar-sesion');
+      alert('Sesión expirada o no iniciada. Por favor, inicie sesión.');
+      return null;
+    }
+    return token;
+  };
+
+  // --- Operaciones de API (Autenticadas) ---
+
+  const fetchClientes = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    setCargando(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_URL}/clientes`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Incluir el token en la cabecera
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Fallo al cargar clientes');
+      }
+
+      const data: Cliente[] = await res.json();
+      setClientes(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error de red o servidor al cargar clientes');
+      // Opcional: si el error es 401/403, forzar logout/redirigir
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const registrarCliente = async (cliente: NuevoCliente) => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/clientes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Incluir el token
+        },
+        body: JSON.stringify(cliente),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Fallo al registrar cliente');
+      }
+
+      // Asumimos que el servidor devuelve el cliente creado (con ID)
+      const nuevo: Cliente = await res.json();
+      setClientes(prev => [...prev, nuevo]);
+      
+      // Limpiar formulario
+      setNuevoCliente({
+          nombre: '',
+          apellido: '',
+          email: '',
+          telefono: '',
+          direccion: '',
+      });
+      alert(`Cliente ${nuevo.nombre} ${nuevo.apellido} registrado con éxito.`);
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error de red o servidor al registrar cliente');
+    }
+  };
+
+  // Cargar clientes al montar el componente
+  useEffect(() => {
+    fetchClientes();
+  }, []); 
+
+  // --- Manejo del Formulario ---
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,51 +128,33 @@ export const GestionClientes: React.FC = () => {
     }));
   };
 
- 
-  const generarNuevoId = (list: { id: number }[]): number => {
-    const maxId = list.reduce((max, item) => (item.id > max ? item.id : max), 0);
-    return maxId + 1;
-  };
-
- 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nuevoCliente.nombre || !nuevoCliente.apellido || !nuevoCliente.telefono) {
         alert('Por favor, complete los campos obligatorios: Nombre, Apellido y Teléfono.');
         return;
     }
-
-    const nuevo: Cliente = {
-      ...nuevoCliente,
-      id: generarNuevoId(clientes),
-    };
-
-    setClientes([...clientes, nuevo]);
-
-
-    setNuevoCliente({
-        nombre: '',
-        apellido: '',
-        email: '',
-        telefono: '',
-        direccion: '',
-    });
+    registrarCliente(nuevoCliente);
   };
+  
+  // --- Renderizado (Se mantiene el JSX y estilos originales) ---
 
   return (
     <div style={styles.container}>
       <header>
-        <h1>👨‍👩‍👧‍👦 Gestión de Clientes (Propietarios)</h1>
-        <p>Clientes registrados en la base de datos: **{clientes.length}**</p>
+        <h1>👨‍👩‍👧‍👦 Gestión de Clientes</h1>
+        <p>Clientes registrados: **{clientes.length}**</p>
       </header>
 
       <hr style={styles.hr} />
 
+      {error && <p style={{ color: "red", padding: '10px', border: '1px solid red', borderRadius: '5px' }}>Error: {error}</p>}
       
+      {/* Sección de Registrar Cliente */}
       <section style={styles.section}>
         <h2>➕ Registrar Nuevo Cliente</h2>
         <form onSubmit={handleSubmit} style={styles.form}>
-            
+          {/* ... Controles de Formulario ... (Mismos que el original) */}
           <div style={styles.formRow}>
             <label>Nombre (*):
               <input type="text" name="nombre" value={nuevoCliente.nombre} onChange={handleChange} required style={styles.input} />
@@ -100,7 +163,6 @@ export const GestionClientes: React.FC = () => {
               <input type="text" name="apellido" value={nuevoCliente.apellido} onChange={handleChange} required style={styles.input} />
             </label>
           </div>
-          
           <div style={styles.formRow}>
             <label>Teléfono (*):
               <input type="tel" name="telefono" value={nuevoCliente.telefono} onChange={handleChange} required style={styles.input} />
@@ -109,7 +171,6 @@ export const GestionClientes: React.FC = () => {
               <input type="email" name="email" value={nuevoCliente.email} onChange={handleChange} style={styles.input} />
             </label>
           </div>
-          
           <div>
             <label>Dirección:
               <input type="text" name="direccion" value={nuevoCliente.direccion} onChange={handleChange} style={styles.input} />
@@ -124,41 +185,46 @@ export const GestionClientes: React.FC = () => {
 
       <hr style={styles.hr} />
 
-     
+      {/* Sección de Listado de Clientes */}
       <section style={styles.section}>
-        <h2>📋 Listado de Clientes Registrados 
-
-[Image of table showing list of clients]
-</h2>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>ID</th>
-              <th style={styles.th}>Nombre Completo</th>
-              <th style={styles.th}>Teléfono</th>
-              <th style={styles.th}>Email</th>
-              <th style={styles.th}>Dirección</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientes.map(c => (
-              <tr key={c.id}>
-                <td style={styles.td}>{c.id}</td>
-                <td style={styles.td}>**{c.nombre} {c.apellido}**</td>
-                <td style={styles.td}>{c.telefono}</td>
-                <td style={styles.td}>{c.email || '-'}</td>
-                <td style={styles.td}>{c.direccion || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {clientes.length === 0 && <p style={{ textAlign: 'center', marginTop: '15px' }}>No hay clientes registrados.</p>}
+        <h2>📋 Listado de Clientes Registrados</h2>
+        
+        {cargando ? (
+            <p style={{ textAlign: 'center' }}>Cargando clientes...</p>
+        ) : (
+            <>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>ID</th>
+                      <th style={styles.th}>Nombre Completo</th>
+                      <th style={styles.th}>Teléfono</th>
+                      <th style={styles.th}>Email</th>
+                      <th style={styles.th}>Dirección</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientes.map(c => (
+                      <tr key={c.id}>
+                        <td style={styles.td}>{c.id}</td>
+                        <td style={styles.td}>**{c.nombre} {c.apellido}**</td>
+                        <td style={styles.td}>{c.telefono}</td>
+                        <td style={styles.td}>{c.email || '-'}</td>
+                        <td style={styles.td}>{c.direccion || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {clientes.length === 0 && <p style={{ textAlign: 'center', marginTop: '15px' }}>No hay clientes registrados.</p>}
+            </>
+        )}
       </section>
     </div>
   );
 };
 
 
+// Estilos (Se mantienen los originales)
 const styles: { [key: string]: React.CSSProperties } = {
     container: {
         fontFamily: 'Roboto, sans-serif',
