@@ -1,5 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './VeterinaryReservations.css'; 
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 
 
@@ -9,15 +12,18 @@ interface Service {
   price: number;
 }
 
-interface Pet {
-  id: number;
+interface Veterinarian {
+  id: number; 
   name: string;
-  clientId: number;
+  email: string; 
+  especialidad: string;
 }
 
-interface Veterinarian {
+interface Mascota { 
   id: number;
-  name: string;
+  nombre: string;
+  propietarioId: number;
+  propietarioNombre: string; 
 }
 
 interface Reservation {
@@ -32,56 +38,122 @@ interface Reservation {
 }
 
 
+interface NewReservationData {
+    petId: string;
+    veterinarianId: string;
+    dateTime: string;
+    clientName: string; 
+    petName: string;   
+    selectedServices: Service[];
+}
 
-const MOCK_VETS: Veterinarian[] = [
-  { id: 1, name: 'Dr. López' },
-  { id: 2, name: 'Dra. García' },
-];
-
-const MOCK_PETS: Pet[] = [
-  { id: 101, name: 'Fido', clientId: 1 },
-  { id: 102, name: 'Mishi', clientId: 2 },
-];
-
-const MOCK_SERVICES: Service[] = [
-  { id: 1, name: 'Consulta General', price: 35000 },
-  { id: 2, name: 'Vacuna Anual', price: 20000 },
-  { id: 3, name: 'Corte de Uñas', price: 5000 },
-];
-
-
-const initialReservations: Reservation[] = [
-  {
-    id: 1,
-    petId: 101,
-    veterinarianId: 1,
-    dateTime: '2025-12-10T10:00',
-    status: 'Confirmada',
-    services: [MOCK_SERVICES[0]],
-    clientName: 'Juan Pérez',
-    petName: 'Fido',
-  },
-];
-
+const initialNewReservationData: NewReservationData = { 
+    petId: '', 
+    veterinarianId: '', 
+    dateTime: '', 
+    clientName: '', 
+    petName: '', 
+    selectedServices: [] 
+};
 
 
 export const VeterinaryReservations: React.FC = () => {
-  const [reservations, setReservations] = useState<Reservation[]>(initialReservations);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [vets, setVets] = useState<Veterinarian[]>([]);
+  const [pets, setPets] = useState<Mascota[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   const [filterText, setFilterText] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
- 
-  const [newReservationData, setNewReservationData] = useState({
-    petId: '',
-    veterinarianId: '',
-    dateTime: '',
-    clientName: '',
-    petName: '',
-    selectedServices: [] as Service[],
-  });
+  const navigate = useNavigate();
+  
+  const [newReservationData, setNewReservationData] = useState<NewReservationData>(initialNewReservationData);
 
   
+
+  const getToken = (): string | null => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+    
+      navigate('/iniciar-sesion');
+      alert('Sesión expirada o no iniciada. Por favor, inicie sesión.');
+      return null;
+    }
+    return token;
+  };
+
+  const getHeaders = (token: string) => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  });
+
+  const handleApiError = async (res: Response) => {
+    const errorData = await res.json();
+    throw new Error(errorData.error || `Fallo en la API: ${res.statusText}`);
+  };
+
+
+  
+  const fetchData = useCallback(async () => {
+    const token = getToken();
+    if (!token) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+
+      const vetsRes = await fetch(`${API_URL}/veterinarios/activos`, { headers: getHeaders(token) });
+      if (!vetsRes.ok) await handleApiError(vetsRes);
+      const vetsData: Veterinarian[] = await vetsRes.json();
+      setVets(vetsData.map(v => ({...v, id: Number(v.email.split('@')[0]) }))); 
+
+
+      const petsRes = await fetch(`${API_URL}/mascotas/detalles`, { headers: getHeaders(token) }); 
+      if (!petsRes.ok) await handleApiError(petsRes);
+      const petsData: Mascota[] = await petsRes.json();
+      setPets(petsData);
+
+    
+      const servicesRes = await fetch(`${API_URL}/servicios`, { headers: getHeaders(token) });
+      if (!servicesRes.ok) await handleApiError(servicesRes);
+      const servicesData: Service[] = await servicesRes.json();
+      setServices(servicesData);
+
+    
+      const reservationsRes = await fetch(`${API_URL}/reservas`, { headers: getHeaders(token) });
+      if (!reservationsRes.ok) await handleApiError(reservationsRes);
+      const reservationsData: Reservation[] = await reservationsRes.json();
+      setReservations(reservationsData);
+
+     
+      if (petsData.length > 0) {
+        setNewReservationData(prev => ({ 
+            ...prev, 
+            petId: String(petsData[0].id),
+            petName: petsData[0].nombre,
+            clientName: petsData[0].propietarioNombre
+        }));
+      }
+      
+    } catch (err: any) {
+      console.error("Error al cargar datos:", err);
+      setError(err.message || 'Error de red o servidor al cargar datos.');
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+
+
   const isTimeSlotTaken = useCallback((dateTime: string, veterinarianId: number, currentReservationId?: number) => {
     return reservations.some(res =>
       res.dateTime === dateTime &&
@@ -90,64 +162,109 @@ export const VeterinaryReservations: React.FC = () => {
       res.id !== currentReservationId 
     );
   }, [reservations]);
-
   
-  const handleSaveReservation = (e: React.FormEvent) => {
+  const updateReservationStatus = async (id: number, newStatus: 'Modificada' | 'Anulada') => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+        const res = await fetch(`${API_URL}/reservas/${id}/status`, {
+            method: 'PUT',
+            headers: getHeaders(token),
+            body: JSON.stringify({ status: newStatus }),
+        });
+
+        if (!res.ok) await handleApiError(res);
+        
+      
+        setReservations(prev =>
+            prev.map(res => (res.id === id ? { ...res, status: newStatus } : res))
+        );
+        alert(`Reserva ${id} ${newStatus === 'Anulada' ? 'anulada' : 'modificada'} con éxito.`);
+
+    } catch (err: any) {
+        setError(err.message || `Error al ${newStatus === 'Anulada' ? 'anular' : 'modificar'} la reserva.`);
+    }
+  }
+
+
+  const handleSaveReservation = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { petId, veterinarianId, dateTime, clientName, petName, selectedServices } = newReservationData;
+    const token = getToken();
+    if (!token) return;
+
+    const { petId, veterinarianId, dateTime, selectedServices } = newReservationData;
     const vetIdNum = parseInt(veterinarianId);
+    const petIdNum = parseInt(petId);
 
     if (isTimeSlotTaken(dateTime, vetIdNum, editingReservation?.id)) {
       alert('Error: Ya existe una reserva para este veterinario a esta hora.');
       return;
     }
+    
 
-    if (editingReservation) {
-      
-      setReservations(prev => prev.map(res =>
-        res.id === editingReservation.id
-          ? {
-              ...res,
-              petId: parseInt(petId),
-              veterinarianId: vetIdNum,
-              dateTime,
-              services: selectedServices,
-              status: res.status !== 'Anulada' ? 'Modificada' : res.status,
-              clientName,
-              petName,
-            }
-          : res
-      ));
-      alert('Reserva modificada con éxito.');
-    } else {
-
-      const newRes: Reservation = {
-        id: Date.now(), 
-        petId: parseInt(petId),
+    const selectedPet = pets.find(p => p.id === petIdNum);
+    if (!selectedPet) {
+        alert('Error: Mascota no válida.');
+        return;
+    }
+    
+    
+    const reservationPayload = {
+        petId: petIdNum,
         veterinarianId: vetIdNum,
         dateTime,
-        status: 'Confirmada',
-        services: selectedServices, 
-        clientName,
-        petName,
-      };
-      setReservations(prev => [...prev, newRes]);
-      alert('Reserva registrada con éxito.');
-    }
+        services: selectedServices.map(s => s.id), 
+        clientName: selectedPet.propietarioNombre, 
+        petName: selectedPet.nombre,              
+    };
 
-    setNewReservationData({ petId: '', veterinarianId: '', dateTime: '', clientName: '', petName: '', selectedServices: [] });
-    setEditingReservation(null);
-    setIsModalOpen(false);
+    try {
+        let res: Response;
+        let method: 'POST' | 'PUT';
+        let url: string;
+        
+        if (editingReservation) {
+            method = 'PUT';
+            url = `${API_URL}/reservas/${editingReservation.id}`;
+        } else {
+            method = 'POST';
+            url = `${API_URL}/reservas`;
+        }
+
+        res = await fetch(url, {
+            method,
+            headers: getHeaders(token),
+            body: JSON.stringify(reservationPayload),
+        });
+
+        if (!res.ok) await handleApiError(res);
+        
+        const data: Reservation = await res.json();
+        
+        if (editingReservation) {
+            setReservations(prev => prev.map(res =>
+                res.id === editingReservation.id ? {...res, ...data, status: 'Modificada'} : res
+            ));
+            alert('Reserva modificada con éxito.');
+        } else {
+            setReservations(prev => [...prev, data]);
+            alert('Reserva registrada con éxito.');
+        }
+
+        setNewReservationData(initialNewReservationData);
+        setEditingReservation(null);
+        setIsModalOpen(false);
+
+    } catch (err: any) {
+        setError(err.message || 'Error al guardar la reserva.');
+    }
   };
 
-  
   const handleCancelReservation = (id: number) => {
     const confirmCancel = window.confirm('¿Está seguro de que desea anular esta reserva?');
     if (confirmCancel) {
-      setReservations(prev =>
-        prev.map(res => (res.id === id ? { ...res, status: 'Anulada' } : res))
-      );
-      alert('Reserva anulada.');
+      updateReservationStatus(id, 'Anulada');
     }
   };
 
@@ -157,36 +274,51 @@ export const VeterinaryReservations: React.FC = () => {
     return reservations.filter(res =>
       res.clientName.toLowerCase().includes(lowerCaseFilter) ||
       res.petName.toLowerCase().includes(lowerCaseFilter) ||
-      MOCK_VETS.find(v => v.id === res.veterinarianId)?.name.toLowerCase().includes(lowerCaseFilter)
+      vets.find(v => v.id === res.veterinarianId)?.name.toLowerCase().includes(lowerCaseFilter)
     );
-  }, [reservations, filterText]);
-
-
-  const handleDeletePet = (petId: number) => {
-    const isPetReserved = reservations.some(res => res.petId === petId && res.status !== 'Anulada');
-    
-
-    if (isPetReserved) {
-      alert('Error: No se puede eliminar esta mascota porque tiene reservas activas. Primero anule o elimine las reservas.');
-    } else {
-      
-      alert('Mascota eliminada con éxito (si no tuviera reservas).');
-    }
-  };
+  }, [reservations, filterText, vets]);
 
 
   const startEditing = (res: Reservation) => {
+    const petData = pets.find(p => p.id === res.petId);
+
     setEditingReservation(res);
     setNewReservationData({
         petId: String(res.petId),
         veterinarianId: String(res.veterinarianId),
         dateTime: res.dateTime,
-        clientName: res.clientName,
-        petName: res.petName,
+        clientName: petData?.propietarioNombre || res.clientName,
+        petName: petData?.nombre || res.petName,
         selectedServices: res.services,
     });
     setIsModalOpen(true);
   };
+  
+  const handlePetChange = (petIdValue: string) => {
+      const petIdNum = parseInt(petIdValue);
+      const selectedPet = pets.find(p => p.id === petIdNum);
+
+      setNewReservationData(prev => ({
+          ...prev, 
+          petId: petIdValue,
+          petName: selectedPet?.nombre || '',
+          clientName: selectedPet?.propietarioNombre || '',
+      }));
+  }
+  
+ 
+  const getVetName = (id: number) => vets.find(v => v.id === id)?.name || 'Desconocido';
+
+
+
+  if (loading) {
+    return <div className="reservations-container"><h2>Cargando datos...</h2></div>;
+  }
+  
+  if (error) {
+    return <div className="reservations-container"><h2 style={{color: 'red'}}>Error: {error}</h2><button onClick={fetchData}>Reintentar Carga</button></div>;
+  }
+
 
   return (
     <div className="reservations-container">
@@ -194,7 +326,10 @@ export const VeterinaryReservations: React.FC = () => {
       
       <button onClick={() => {
         setEditingReservation(null);
-        setNewReservationData({ petId: '', veterinarianId: '', dateTime: '', clientName: '', petName: '', selectedServices: [] });
+        setNewReservationData(initialNewReservationData);
+        if (pets.length > 0) {
+           handlePetChange(String(pets[0].id)); // Establecer el primer paciente por defecto
+        }
         setIsModalOpen(true);
       }}>
         Registrar Nueva Reserva
@@ -208,33 +343,37 @@ export const VeterinaryReservations: React.FC = () => {
             <form onSubmit={handleSaveReservation}>
               
               <label>
+                Mascota:
+                <select
+                  value={newReservationData.petId}
+                  onChange={e => handlePetChange(e.target.value)}
+                  required
+                >
+                  <option value="">Seleccione una Mascota</option>
+                  {pets.map(pet => (
+                    <option key={pet.id} value={pet.id}>{pet.nombre} (Dueño: {pet.propietarioNombre})</option>
+                  ))}
+                </select>
+              </label>
+              
+              {/* Campo Cliente y Mascota ahora son solo de lectura, obtenidos del select */}
+              <label>
                 Cliente:
                 <input
                   type="text"
                   value={newReservationData.clientName}
-                  onChange={e => setNewReservationData({...newReservationData, clientName: e.target.value})}
-                  required
+                  readOnly
+                  disabled
                 />
               </label>
 
               <label>
-                Mascota:
+                Nombre Mascota:
                 <input
                   type="text"
                   value={newReservationData.petName}
-                  onChange={e => {
-                    setNewReservationData({...newReservationData, petName: e.target.value});
-           
-                    if (!editingReservation) {
-                        const petMatch = MOCK_PETS.find(p => p.name.toLowerCase() === e.target.value.toLowerCase());
-                        if (petMatch) {
-                             setNewReservationData(prev => ({...prev, petId: String(petMatch.id)}));
-                        } else {
-                             setNewReservationData(prev => ({...prev, petId: '999'})); // Usar un ID de mascota temporal
-                        }
-                    }
-                  }}
-                  required
+                  readOnly
+                  disabled
                 />
               </label>
               
@@ -246,8 +385,8 @@ export const VeterinaryReservations: React.FC = () => {
                   required
                 >
                   <option value="">Seleccione un Veterinario</option>
-                  {MOCK_VETS.map(vet => (
-                    <option key={vet.id} value={vet.id}>{vet.name}</option>
+                  {vets.map(vet => (
+                    <option key={vet.id} value={vet.id}>{vet.name} ({vet.especialidad})</option>
                   ))}
                 </select>
               </label>
@@ -265,7 +404,7 @@ export const VeterinaryReservations: React.FC = () => {
               
               <fieldset>
                 <legend>Servicios Asociados:</legend>
-                {MOCK_SERVICES.map(service => (
+                {services.map(service => (
                   <div key={service.id}>
                     <input
                       type="checkbox"
@@ -285,7 +424,7 @@ export const VeterinaryReservations: React.FC = () => {
                         }
                       }}
                     />
-                    <label htmlFor={`service-${service.id}`}>{service.name} (${service.price})</label>
+                    <label htmlFor={`service-${service.id}`}>{service.name} (${service.price.toFixed(2)})</label>
                   </div>
                 ))}
               </fieldset>
@@ -299,9 +438,9 @@ export const VeterinaryReservations: React.FC = () => {
         </div>
       )}
 
- 
+      {/* --- Listado de Reservas --- */}
       <div className="filter-section">
-        <h2>Listado de Reservas</h2>
+        <h2>Listado de Reservas ({filteredReservations.length})</h2>
         <input
           type="text"
           placeholder="Filtrar por Cliente, Mascota o Veterinario..."
@@ -310,7 +449,7 @@ export const VeterinaryReservations: React.FC = () => {
         />
       </div>
 
-     
+      
       <table className="reservations-table">
         <thead>
           <tr>
@@ -331,7 +470,7 @@ export const VeterinaryReservations: React.FC = () => {
                 <td>{res.id}</td>
                 <td>{res.clientName}</td>
                 <td>{res.petName}</td>
-                <td>{MOCK_VETS.find(v => v.id === res.veterinarianId)?.name}</td>
+                <td>{getVetName(res.veterinarianId)}</td>
                 <td>{new Date(res.dateTime).toLocaleString()}</td>
                 <td>
                   <ul>
@@ -345,10 +484,6 @@ export const VeterinaryReservations: React.FC = () => {
                   </button>
                   <button onClick={() => handleCancelReservation(res.id)} disabled={res.status === 'Anulada'}>
                     Anular
-                  </button>
-                 
-                  <button onClick={() => handleDeletePet(res.petId)} title="Simula un intento de borrar la mascota">
-                    Test Borrar Mascota
                   </button>
                 </td>
               </tr>
