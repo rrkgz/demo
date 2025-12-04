@@ -5,10 +5,13 @@ import Reserva from './Reserva';
 
 @Table({ tableName: 'veterinarios' })
 class Veterinario extends Model {
-    @Column({ type: DataType.STRING(50), primaryKey: true, allowNull: false, validate: { isEmail: true } })
+    @Column({ type: DataType.STRING(50), primaryKey: true })
     declare email: string;
 
     @Column({ type: DataType.STRING(100), allowNull: false })
+    declare password: string;
+
+    @Column({ type: DataType.STRING(25), allowNull: false })
     declare nombre: string;
 
     @Column({ type: DataType.STRING(20), allowNull: false })
@@ -16,9 +19,6 @@ class Veterinario extends Model {
 
     @Column({ type: DataType.STRING(10), allowNull: false, defaultValue: 'activo' })
     declare estado: string;
-
-    @Column({ type: DataType.STRING(100), allowNull: false })
-    declare password: string;
 
     @BeforeCreate
     static async hashPassword(veterinario: Veterinario) {

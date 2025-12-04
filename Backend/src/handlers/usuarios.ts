@@ -1,26 +1,55 @@
 import { Request, Response } from "express"
 import bcrypt from 'bcrypt'
 import Usuario from "../models/Usuario"
-import jwt from 'jsonwebtoken'
+import { crearToken } from "../utils/jwt"
 
 
 
 export const inicioSesion = async(request: Request, response: Response)=>{
-    const {email,password} = request.body
-    const SECRET = process.env.SECRET_KEY    
+    const {email, password} = request.body
+    
+    console.log('\n🔐 ===== INICIO DE SESIÓN =====');
+    console.log('📧 Email:', email);
+    
     try {
+        // Buscar usuario
         const usuario = await Usuario.findByPk(email)
-        console.log(usuario);
         
-        if(!usuario || !bcrypt.compareSync(password, usuario.password)){
-            response.status(401).json({error: 'Credenciales Incorrectas aa'})
+        if(!usuario) {
+            console.log('❌ Usuario no encontrado');
+            response.status(401).json({error: 'Usuario o contraseña incorrectos'})
             return;
         }
+        
+        console.log('✅ Usuario encontrado:', usuario.email);
+        
+        // Verificar contraseña
+        const passwordValida = bcrypt.compareSync(password, usuario.password);
+        if(!passwordValida) {
+            console.log('❌ Contraseña inválida');
+            response.status(401).json({error: 'Usuario o contraseña incorrectos'})
+            return;
+        }
+        
+        console.log('✅ Contraseña correcta');
 
-        const token = jwt.sign({email: usuario.email}, SECRET, {expiresIn: '1h'})
-        response.json({token})
+        // Buscar cliente asociado
+        const Cliente = require('../models/Cliente').default;
+        const cliente = await Cliente.findOne({ where: { email: usuario.email } });
+        
+        console.log('🔍 Cliente encontrado:', cliente ? cliente.id_cliente : 'NO ENCONTRADO');
+        
+        // Crear token
+        const token = crearToken({
+            email: usuario.email,
+            id_cliente: cliente?.id_cliente || undefined
+        });
+        
+        console.log('🎉 Login exitoso\n');
+        
+        response.json({ token });
     } catch (error) {
-        console.log('Error de login', error);
+        console.log('❌ Error en login:', error);
         response.status(500).json({error: 'Error interno del servidor'})
     }
 }
@@ -28,7 +57,7 @@ export const inicioSesion = async(request: Request, response: Response)=>{
 
 
 export const crearUsuario = async (request: Request, response: Response) => {
-    const { email, password } = request.body;
+    const { email, password, nombre, direccion, telefono } = request.body;
     if (!email || !password) {
         response.status(400).json({ error: 'Email y contraseña son obligatorios' });
         return;
@@ -41,13 +70,20 @@ export const crearUsuario = async (request: Request, response: Response) => {
             return;
         }
 
-        
-
         console.log('Creando usuario:', { email });
 
         const nuevoUsuario = await Usuario.create({ email, password });
 
-        console.log('Usuario creado:', nuevoUsuario);
+        // Crear cliente asociado automáticamente
+        const Cliente = require('../models/Cliente').default;
+        await Cliente.create({
+            nombre: nombre || 'Usuario',
+            direccion: direccion || 'Sin dirección',
+            telefono: telefono || 'Sin teléfono',
+            email: email
+        });
+
+        console.log('Usuario y cliente creados:', email);
         response.status(201).json({ message: 'Usuario creado correctamente' });
     } catch (error) {
         console.error('Error al registrar usuario', error);

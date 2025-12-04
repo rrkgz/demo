@@ -38,8 +38,8 @@ export default function MenuPrincipal() {
 
       {/* Accesos rápidos orientados al cliente */}
       <div className="container pb-5">
-        <div className="row g-4">
-          <div className="col-md-6 col-lg-4">
+        <div className="row g-4 justify-content-center">
+          <div className="col-md-6 col-lg-5">
             <div className="card h-100 shadow-sm border-0">
               <div className="card-body text-center p-4">
                 <div className="mb-3">
@@ -52,7 +52,7 @@ export default function MenuPrincipal() {
             </div>
           </div>
 
-          <div className="col-md-6 col-lg-4">
+          <div className="col-md-6 col-lg-5">
             <div className="card h-100 shadow-sm border-0">
               <div className="card-body text-center p-4">
                 <div className="mb-3">
@@ -61,45 +61,6 @@ export default function MenuPrincipal() {
                 <h5 className="card-title fw-bold">Historial Médico</h5>
                 <p className="card-text text-muted">Consulta el historial de tus mascotas</p>
                 <Link to="/historial" className="btn btn-outline-primary">Ir</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm border-0">
-              <div className="card-body text-center p-4">
-                <div className="mb-3">
-                  <span className="bi bi-bag" style={{ fontSize: 48, color: '#7b2cbf' }}></span>
-                </div>
-                <h5 className="card-title fw-bold">Catálogo</h5>
-                <p className="card-text text-muted">Explora nuestros productos</p>
-                <Link to="/catalogo" className="btn btn-outline-primary">Ir</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm border-0">
-              <div className="card-body text-center p-4">
-                <div className="mb-3">
-                  <span className="bi bi-person-circle" style={{ fontSize: 48, color: '#7b2cbf' }}></span>
-                </div>
-                <h5 className="card-title fw-bold">Mi Cuenta</h5>
-                <p className="card-text text-muted">Actualiza tus datos y contraseña</p>
-                <Link to="/cuenta" className="btn btn-outline-primary">Ir</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6 col-lg-4">
-            <div className="card h-100 shadow-sm border-0 border-warning" style={{ borderWidth: '2px !important' }}>
-              <div className="card-body text-center p-4">
-                <div className="mb-3">
-                  <span className="bi bi-shield-lock" style={{ fontSize: 48, color: '#f59e0b' }}></span>
-                </div>
-                <h5 className="card-title fw-bold">Acceso Administrador</h5>
-                <p className="card-text text-muted">Panel de administración</p>
-                <Link to="/iniciar-sesion-admin" className="btn btn-warning">Ingresar</Link>
               </div>
             </div>
           </div>

@@ -7,9 +7,11 @@ import CambiarPassword from "./views/auth/CambiarPassword";
 import PrivateRoute from "./components/PrivateRouter";
 import PrivateRouteAdmin from "./components/PrivateRouteAdmin";
 import AdminUsuarios from "./views/admin/AdminUsuarios";
-import AgendarCitas from "./views/usuario/agendarcita";
+import AgendarCitaUsuario from "./views/usuario/AgendarCitaUsuario";
+import AgendarCitasAdmin from "./views/admin/AgendarCitasAdmin";
 import MenuPrincipal from "./views/usuario/MenuPrincipal";
 import CuentaUsuario from "./views/usuario/CuentaUsuario";
+import MisMascotas from "./views/usuario/MisMascotas";
 import PanelAdmin from "./views/admin/PanelAdmin";
 import AdminVeterinarios from "./views/admin/AdminVeterinarios";
 import { GestionClientes } from "./views/admin/GestionCliente";
@@ -57,12 +59,24 @@ export const router = createBrowserRouter([
                                 element: <CuentaUsuario />,
                             },
                             {
+                                path: '/mis-mascotas',
+                                element: <MisMascotas />,
+                            },
+                            {
                                 path: '/cambiar-pass',
                                 element: <CambiarPassword />,
                             },
                             {
                                 path: '/catalogo',
                                 element: <CatalogoProductos />,
+                            },
+                            {
+                                path: '/mis-citas',
+                                element: <AgendarCitaUsuario />,
+                            },
+                            {
+                                path: '/historial',
+                                element: <AgendarCitaUsuario />,
                             },
                         ],
                     },
@@ -102,8 +116,8 @@ export const router = createBrowserRouter([
                                 element: <ReportesVeterinaria />,
                             },
                             {
-                                path: '/agendar-citas',
-                                element: <AgendarCitas />,
+                                path: '/admin/agendar-citas',
+                                element: <AgendarCitasAdmin />,
                             },
                         ],
                     },

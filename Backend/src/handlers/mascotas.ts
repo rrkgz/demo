@@ -5,43 +5,63 @@ import Veterinario from '../models/Veterinario';
 
 // Crear mascota
 export const crearMascota = async (request: Request, response: Response) => {
-    const { rut_cliente, id_veterinario, nombre, especie, raza, edad, peso, sexo } = request.body;
+    const { id_veterinario, nombre, especie, raza, edad, peso, sexo } = request.body;
+    const user = (request as any).user;
     
-    if (!rut_cliente || !nombre || !especie) {
-        response.status(400).json({ error: 'RUT cliente, nombre y especie son obligatorios' });
+    const clienteId = user?.id_cliente;
+    
+    console.log('\n🐾 ===== CREAR MASCOTA =====');
+    console.log('📧 Usuario:', user?.email);
+    console.log('👤 Cliente ID:', clienteId);
+    console.log('📝 Datos:', { nombre, especie, raza, edad, peso, sexo });
+    
+    if (!clienteId || !nombre || !especie) {
+        console.log('❌ Datos incompletos');
+        response.status(400).json({ error: 'Cliente, nombre y especie son obligatorios' });
         return;
     }
 
     try {
-        const nuevaMascota = await Mascota.create({ 
-            rut_cliente, 
-            id_veterinario, 
+        const dataMascota = { 
+            rut_cliente: clienteId, 
+            id_veterinario: id_veterinario || '', 
             nombre, 
             especie, 
-            raza, 
-            edad, 
-            peso, 
-            sexo 
-        });
+            raza: raza || '', 
+            edad: edad || 0, 
+            peso: peso || 0, 
+            sexo: Boolean(sexo)
+        };
+        
+        console.log('💾 Guardando en BD:', dataMascota);
+        const nuevaMascota = await Mascota.create(dataMascota);
+        console.log('✅ Mascota creada:', nuevaMascota.id_mascota, '\n');
         response.status(201).json({ message: 'Mascota creada correctamente', mascota: nuevaMascota });
     } catch (error) {
-        console.error('Error al crear mascota', error);
+        console.error('❌ Error al crear mascota:', error);
         response.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
 // Listar mascotas (con datos del cliente y veterinario)
 export const listarMascotas = async (request: Request, response: Response) => {
+    const user = (request as any).user;
+    const clienteId = user?.id_cliente;
+
+    console.log('📋 Listando mascotas para cliente:', clienteId);
+
     try {
         const mascotas = await Mascota.findAll({
+            where: clienteId ? { rut_cliente: clienteId } : {},
             include: [
                 { model: Cliente, as: 'cliente' },
                 { model: Veterinario, as: 'veterinario', attributes: ['email', 'nombre', 'especialidad'] }
             ]
         });
+        console.log('✅ Mascotas encontradas:', mascotas.length);
         response.json(mascotas);
     } catch (error) {
-        console.error('Error al listar mascotas', error);
+        console.error('❌ Error al listar mascotas:', error);
         response.status(500).json({ error: 'Error al obtener mascotas' });
     }
 };

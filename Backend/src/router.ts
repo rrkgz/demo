@@ -40,12 +40,12 @@ router.get('/clientes/:id', obtenerCliente)
 router.put('/clientes/:id', modificarCliente)
 router.delete('/clientes/:id', eliminarCliente)
 
-// Mascotas
-router.post('/mascotas', crearMascota)
-router.get('/mascotas', listarMascotas)
-router.get('/mascotas/:id', obtenerMascota)
-router.put('/mascotas/:id', modificarMascota)
-router.delete('/mascotas/:id', eliminarMascota)
+// Mascotas (protegidas con token)
+router.post('/mascotas', verificarToken, crearMascota)
+router.get('/mascotas', verificarToken, listarMascotas)
+router.get('/mascotas/:id', verificarToken, obtenerMascota)
+router.put('/mascotas/:id', verificarToken, modificarMascota)
+router.delete('/mascotas/:id', verificarToken, eliminarMascota)
 
 // Servicios
 router.post('/servicios', crearServicio)

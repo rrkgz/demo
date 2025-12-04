@@ -73,7 +73,7 @@ export default function PanelAdmin() {
                 </div>
                 <h5 className="card-title fw-bold">Agendar Citas</h5>
                 <p className="card-text text-muted">Agendar citas para clientes</p>
-                <Link to="/agendar-citas" className="btn btn-primary">Agendar</Link>
+                <Link to="/admin/agendar-citas" className="btn btn-primary">Agendar</Link>
               </div>
             </div>
           </div>
