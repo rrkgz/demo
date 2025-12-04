@@ -20,6 +20,8 @@ import { GestionTratamientos } from "./views/admin/Tratamientos";
 import { CatalogoProductos } from "./views/usuario/catalogo";
 import { BoletaVeterinaria } from "./views/admin/Boleta";
 import { ReportesVeterinaria } from "./views/admin/Reporte";
+import Historial from "./views/usuario/historial";
+import HistorialAdmin from "./views/admin/HistorialAdmin";
 
 
 //aaaaaaaaa
@@ -76,7 +78,7 @@ export const router = createBrowserRouter([
                             },
                             {
                                 path: '/historial',
-                                element: <AgendarCitaUsuario />,
+                                element: <Historial />,
                             },
                         ],
                     },
@@ -118,6 +120,10 @@ export const router = createBrowserRouter([
                             {
                                 path: '/admin/agendar-citas',
                                 element: <AgendarCitasAdmin />,
+                            },
+                            {
+                                path: '/admin/historial',
+                                element: <HistorialAdmin />,
                             },
                         ],
                     },

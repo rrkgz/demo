@@ -22,6 +22,13 @@ interface Servicio {
   precio: number;
 }
 
+interface Reserva {
+  id_reserva: number;
+  fecha: string;
+  hora: string;
+  id_veterinario: string;
+}
+
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -31,6 +38,7 @@ export default function AgendarCitaUsuario() {
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
   const [veterinarios, setVeterinarios] = useState<Veterinario[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,7 +46,6 @@ export default function AgendarCitaUsuario() {
   const [formData, setFormData] = useState({
     id_mascota: '',
     id_veterinario: '',
-    id_servicio: '',
     fecha: '',
     hora: ''
   });
@@ -54,23 +61,26 @@ export default function AgendarCitaUsuario() {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [mascotasRes, veterinariosRes, serviciosRes] = await Promise.all([
+      const [mascotasRes, veterinariosRes, serviciosRes, reservasRes] = await Promise.all([
         fetch(`${API_URL}/mascotas`, { headers }),
         fetch(`${API_URL}/veterinarios`, { headers }),
-        fetch(`${API_URL}/servicios`, { headers })
+        fetch(`${API_URL}/servicios`, { headers }),
+        fetch(`${API_URL}/reservas`, { headers })
       ]);
 
-      if (!mascotasRes.ok || !veterinariosRes.ok || !serviciosRes.ok) {
+      if (!mascotasRes.ok || !veterinariosRes.ok || !serviciosRes.ok || !reservasRes.ok) {
         throw new Error('Error cargando datos');
       }
 
       const mascotasData = await mascotasRes.json();
       const veterinariosData = await veterinariosRes.json();
       const serviciosData = await serviciosRes.json();
+      const reservasData = await reservasRes.json();
 
       setMascotas(Array.isArray(mascotasData) ? mascotasData : []);
       setVeterinarios(Array.isArray(veterinariosData) ? veterinariosData : []);
       setServicios(Array.isArray(serviciosData) ? serviciosData : []);
+      setReservas(Array.isArray(reservasData) ? reservasData : []);
       setLoading(false);
     } catch (err) {
       setError('Error cargando datos del servidor');
@@ -84,28 +94,48 @@ export default function AgendarCitaUsuario() {
     setError('');
     setSuccess('');
 
-    if (!formData.id_mascota || !formData.id_veterinario || !formData.id_servicio || !formData.fecha || !formData.hora) {
+    if (!formData.id_mascota || !formData.id_veterinario || !formData.fecha || !formData.hora) {
       setError('Por favor completa todos los campos');
       return;
     }
 
     try {
+      // Buscar el servicio que coincida con la especialidad del veterinario
+      const vet = veterinarios.find(v => v.email === formData.id_veterinario);
+      const servicio = vet ? servicios.find(s => 
+        s.nombre.toLowerCase().includes(vet.especialidad.toLowerCase()) ||
+        vet.especialidad.toLowerCase().includes(s.nombre.toLowerCase())
+      ) : null;
+
+      if (!servicio) {
+        setError('No se encontró un servicio compatible con la especialidad del veterinario');
+        return;
+      }
+
       const token = localStorage.getItem('token');
+      const dataToSend = {
+        ...formData,
+        id_servicio: servicio.id_servicio
+      };
+
       const response = await fetch(`${API_URL}/reservas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       });
 
       if (response.ok) {
         setSuccess('¡Cita agendada exitosamente!');
+        
+        // Recargar las reservas para actualizar las horas disponibles
+        await cargarDatos();
+        
         setFormData({
           id_mascota: '',
           id_veterinario: '',
-          id_servicio: '',
           fecha: '',
           hora: ''
         });
@@ -169,11 +199,45 @@ export default function AgendarCitaUsuario() {
     calendarDays.push(i);
   }
 
+  // Generar horarios cada 40 minutos
   const hours = [];
-  for (let i = 9; i <= 19; i++) {
-    hours.push(`${String(i).padStart(2, '0')}:00`);
-    if (i < 19) hours.push(`${String(i).padStart(2, '0')}:30`);
+  const startHour = 9; // 9:00 AM
+  const endHour = 19; // 7:00 PM
+  let currentMinutes = startHour * 60; // Convertir a minutos
+  const endMinutes = endHour * 60;
+
+  while (currentMinutes < endMinutes) {
+    const h = Math.floor(currentMinutes / 60);
+    const m = currentMinutes % 60;
+    hours.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    currentMinutes += 40; // Incremento de 40 minutos
   }
+
+  // Filtrar horas ya reservadas para el veterinario y fecha seleccionados
+  const horasDisponibles = hours.filter(hora => {
+    if (!formData.id_veterinario || !formData.fecha) return true;
+    
+    const estaReservada = reservas.some(r => {
+      // Normalizar fecha para comparación (solo la parte YYYY-MM-DD)
+      const fechaReserva = r.fecha.split('T')[0];
+      const fechaSeleccionada = formData.fecha;
+      
+      // Normalizar hora: comparar solo HH:MM (ignorar segundos)
+      const horaReserva = r.hora.substring(0, 5); // "10:00:00" -> "10:00"
+      
+      const match = r.id_veterinario === formData.id_veterinario && 
+                    fechaReserva === fechaSeleccionada && 
+                    horaReserva === hora;
+      
+      if (match) {
+        console.log('🚫 Hora ocupada:', hora, 'Vet:', r.id_veterinario, 'Fecha:', fechaReserva);
+      }
+      
+      return match;
+    });
+    
+    return !estaReservada;
+  });
 
   if (loading) return <div className="container py-5 text-center">Cargando...</div>;
 
@@ -223,20 +287,7 @@ export default function AgendarCitaUsuario() {
                   <select
                     className="form-control form-control-lg"
                     value={formData.id_veterinario}
-                    onChange={(e) => {
-                      const vetId = e.target.value;
-                      const vet = veterinarios.find(v => v.id_veterinario === parseInt(vetId));
-                      // Buscar servicio que coincida con la especialidad
-                      const servicioMatch = vet ? servicios.find(s => 
-                        s.nombre.toLowerCase().includes(vet.especialidad.toLowerCase()) ||
-                        vet.especialidad.toLowerCase().includes(s.nombre.toLowerCase())
-                      ) : null;
-                      setFormData({ 
-                        ...formData, 
-                        id_veterinario: vetId,
-                        id_servicio: servicioMatch ? String(servicioMatch.id_servicio) : formData.id_servicio
-                      });
-                    }}
+                    onChange={(e) => setFormData({ ...formData, id_veterinario: e.target.value })}
                     required
                   >
                     <option value="">Selecciona un veterinario...</option>
@@ -250,19 +301,12 @@ export default function AgendarCitaUsuario() {
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Tipo de Servicio</label>
-                  <select
-                    className="form-control form-control-lg"
-                    value={formData.id_servicio}
-                    onChange={(e) => setFormData({ ...formData, id_servicio: e.target.value })}
-                    required
-                  >
-                    <option value="">Selecciona un servicio...</option>
-                    {servicios.map(s => (
-                      <option key={s.id_servicio} value={s.id_servicio}>
-                        {s.nombre} - ${s.precio}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    className="form-control form-control-lg bg-light"
+                    value={formData.id_veterinario ? (veterinarios.find(v => v.email === formData.id_veterinario)?.especialidad || 'Selecciona un veterinario') : 'Selecciona un veterinario'}
+                    disabled
+                  />
                 </div>
 
                 <div className="mb-3">
@@ -288,7 +332,7 @@ export default function AgendarCitaUsuario() {
                 <button
                   type="submit"
                   className="btn btn-primary btn-lg w-100 fw-bold"
-                  disabled={!formData.id_mascota || !formData.id_veterinario || !formData.id_servicio || !formData.fecha || !formData.hora}
+                  disabled={!formData.id_mascota || !formData.id_veterinario || !formData.fecha || !formData.hora}
                 >
                   <span className="bi bi-calendar-check me-2"></span>
                   Agendar Cita
@@ -371,23 +415,29 @@ export default function AgendarCitaUsuario() {
           <div className="card shadow-sm border-0">
             <div className="card-body p-4">
               <h5 className="card-title fw-bold mb-3">Selecciona una Hora</h5>
-              <div className="row g-2">
-                {hours.map((hour) => (
-                  <div key={hour} className="col-6">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectHour(hour)}
-                      className={`btn w-100 ${
-                        formData.hora === hour
-                          ? 'btn-primary'
-                          : 'btn-outline-secondary'
-                      }`}
-                    >
-                      {hour}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {!formData.fecha || !formData.id_veterinario ? (
+                <p className="text-muted text-center">Primero selecciona una fecha y un veterinario</p>
+              ) : horasDisponibles.length === 0 ? (
+                <p className="text-warning text-center">No hay horas disponibles para esta fecha</p>
+              ) : (
+                <div className="row g-2">
+                  {horasDisponibles.map((hour) => (
+                    <div key={hour} className="col-6">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectHour(hour)}
+                        className={`btn w-100 ${
+                          formData.hora === hour
+                            ? 'btn-primary'
+                            : 'btn-outline-secondary'
+                        }`}
+                      >
+                        {hour}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -72,14 +72,22 @@ export default function MisMascotas() {
       
       const method = editingMascota ? 'PUT' : 'POST';
       
-      const payload = {
+      const payload: any = {
         nombre: formData.nombre,
         especie: formData.especie,
         raza: formData.raza || '',
-        edad: formData.edad ? parseInt(formData.edad) : 0,
-        peso: formData.peso ? parseFloat(formData.peso) : 0,
         sexo: formData.sexo === '1'
       };
+      
+      // Solo incluir edad si tiene valor
+      if (formData.edad) {
+        payload.edad = parseInt(formData.edad);
+      }
+      
+      // Solo incluir peso si tiene valor
+      if (formData.peso) {
+        payload.peso = parseFloat(formData.peso);
+      }
       
       console.log('📦 Payload:', payload);
 

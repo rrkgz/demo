@@ -12,67 +12,70 @@ import { verificarToken } from './middleware/verificarToken'
 
 const router = Router()
 
-
+// ===== RUTAS PÚBLICAS (SIN AUTENTICACIÓN) =====
 router.post('/crear-cuenta', crearUsuario)
 router.post('/iniciar-sesion', inicioSesion)
 router.post('/iniciar-sesion-admin', inicioSesionAdmin)
 
-// Rutas protegidas para administración
-router.use(verificarToken)
-router.post('/cambiar-password', cambiarPassword)
-
-// Usuarios
-router.get('/usuarios', listarUsuarios)
-router.delete('/usuarios/:email', eliminarUsuario)
-router.put('/usuarios/:email', modificarUsuario)
-
-// Veterinarios
-router.post('/veterinarios', crearVeterinario)
+// Listar servicios y veterinarios (público)
 router.get('/veterinarios', listarVeterinarios)
-router.get('/veterinarios/:email', obtenerVeterinario)
-router.put('/veterinarios/:email', modificarVeterinario)
-router.delete('/veterinarios/:email', eliminarVeterinario)
+router.get('/servicios', listarServicios)
 
-// Clientes
-router.post('/clientes', crearCliente)
-router.get('/clientes', listarClientes)
-router.get('/clientes/:id', obtenerCliente)
-router.put('/clientes/:id', modificarCliente)
-router.delete('/clientes/:id', eliminarCliente)
+// ===== RUTAS PROTEGIDAS (CON AUTENTICACIÓN) =====
 
-// Mascotas (protegidas con token)
+// Cambiar contraseña
+router.post('/cambiar-password', verificarToken, cambiarPassword)
+
+// Usuarios (admin)
+router.get('/usuarios', verificarToken, listarUsuarios)
+router.delete('/usuarios/:email', verificarToken, eliminarUsuario)
+router.put('/usuarios/:email', verificarToken, modificarUsuario)
+
+// Veterinarios (admin)
+router.get('/veterinarios/:email', verificarToken, obtenerVeterinario)
+router.post('/veterinarios', verificarToken, crearVeterinario)
+router.put('/veterinarios/:email', verificarToken, modificarVeterinario)
+router.delete('/veterinarios/:email', verificarToken, eliminarVeterinario)
+
+// Clientes (admin)
+router.post('/clientes', verificarToken, crearCliente)
+router.get('/clientes', verificarToken, listarClientes)
+router.get('/clientes/:id', verificarToken, obtenerCliente)
+router.put('/clientes/:id', verificarToken, modificarCliente)
+router.delete('/clientes/:id', verificarToken, eliminarCliente)
+
+// Mascotas (usuario)
 router.post('/mascotas', verificarToken, crearMascota)
 router.get('/mascotas', verificarToken, listarMascotas)
 router.get('/mascotas/:id', verificarToken, obtenerMascota)
 router.put('/mascotas/:id', verificarToken, modificarMascota)
 router.delete('/mascotas/:id', verificarToken, eliminarMascota)
 
-// Servicios
-router.post('/servicios', crearServicio)
-router.get('/servicios', listarServicios)
-router.get('/servicios/:id', obtenerServicio)
-router.put('/servicios/:id', modificarServicio)
-router.delete('/servicios/:id', eliminarServicio)
+// Servicios (admin)
+router.post('/servicios', verificarToken, crearServicio)
+router.get('/servicios/:id', verificarToken, obtenerServicio)
+router.put('/servicios/:id', verificarToken, modificarServicio)
+router.delete('/servicios/:id', verificarToken, eliminarServicio)
 
-// Reservas
-router.post('/reservas', crearReserva)
-router.get('/reservas', listarReservas)
-router.get('/reservas/:id', obtenerReserva)
-router.put('/reservas/:id', modificarReserva)
-router.delete('/reservas/:id', eliminarReserva)
+// Reservas (usuario)
+router.post('/reservas', verificarToken, crearReserva)
+router.get('/reservas', verificarToken, listarReservas)
+router.get('/reservas/:id', verificarToken, obtenerReserva)
+router.put('/reservas/:id', verificarToken, modificarReserva)
+router.delete('/reservas/:id', verificarToken, eliminarReserva)
 
-// Boletas
-router.post('/boletas', crearBoleta)
-router.get('/boletas', listarBoletas)
-router.get('/boletas/:id', obtenerBoleta)
-router.put('/boletas/:id', modificarBoleta)
-router.delete('/boletas/:id', eliminarBoleta)
+// Boletas (usuario)
+router.post('/boletas', verificarToken, crearBoleta)
+router.get('/boletas', verificarToken, listarBoletas)
+router.get('/boletas/:id', verificarToken, obtenerBoleta)
+router.put('/boletas/:id', verificarToken, modificarBoleta)
+router.delete('/boletas/:id', verificarToken, eliminarBoleta)
 
-// Tratamientos
-router.post('/tratamientos', crearTratamiento)
-router.get('/tratamientos', listarTratamientos)
-router.get('/tratamientos/:id', obtenerTratamiento)
-router.put('/tratamientos/:id', modificarTratamiento)
-router.delete('/tratamientos/:id', eliminarTratamiento)
+// Tratamientos (usuario)
+router.post('/tratamientos', verificarToken, crearTratamiento)
+router.get('/tratamientos', verificarToken, listarTratamientos)
+router.get('/tratamientos/:id', verificarToken, obtenerTratamiento)
+router.put('/tratamientos/:id', verificarToken, modificarTratamiento)
+router.delete('/tratamientos/:id', verificarToken, eliminarTratamiento)
 
 export default router

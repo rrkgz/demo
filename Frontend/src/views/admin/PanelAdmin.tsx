@@ -108,6 +108,19 @@ export default function PanelAdmin() {
             <div className="card h-100 shadow-sm border-0">
               <div className="card-body text-center p-4">
                 <div className="mb-3">
+                  <span className="bi bi-file-medical" style={{ fontSize: 48, color: '#7b2cbf' }}></span>
+                </div>
+                <h5 className="card-title fw-bold">Historial Clínico</h5>
+                <p className="card-text text-muted">Ver historial de visitas completadas</p>
+                <Link to="/admin/historial" className="btn btn-primary">Ver</Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-6 col-lg-4">
+            <div className="card h-100 shadow-sm border-0">
+              <div className="card-body text-center p-4">
+                <div className="mb-3">
                   <span className="bi bi-receipt" style={{ fontSize: 48, color: '#7b2cbf' }}></span>
                 </div>
                 <h5 className="card-title fw-bold">Boletas</h5>

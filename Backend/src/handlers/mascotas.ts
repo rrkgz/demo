@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import Mascota from '../models/Mascota';
 import Cliente from '../models/Cliente';
-import Veterinario from '../models/Veterinario';
 
 // Crear mascota
 export const crearMascota = async (request: Request, response: Response) => {
-    const { id_veterinario, nombre, especie, raza, edad, peso, sexo } = request.body;
+    const { nombre, especie, raza, edad, peso, sexo } = request.body;
     const user = (request as any).user;
     
     const clienteId = user?.id_cliente;
@@ -22,16 +21,23 @@ export const crearMascota = async (request: Request, response: Response) => {
     }
 
     try {
-        const dataMascota = { 
+        const dataMascota: any = { 
             rut_cliente: clienteId, 
-            id_veterinario: id_veterinario || '', 
             nombre, 
             especie, 
             raza: raza || '', 
-            edad: edad || 0, 
-            peso: peso || 0, 
             sexo: Boolean(sexo)
         };
+        
+        // Solo incluir edad si viene definida
+        if (edad !== undefined && edad !== null) {
+            dataMascota.edad = edad;
+        }
+        
+        // Solo incluir peso si viene definida
+        if (peso !== undefined && peso !== null) {
+            dataMascota.peso = peso;
+        }
         
         console.log('💾 Guardando en BD:', dataMascota);
         const nuevaMascota = await Mascota.create(dataMascota);
@@ -54,8 +60,7 @@ export const listarMascotas = async (request: Request, response: Response) => {
         const mascotas = await Mascota.findAll({
             where: clienteId ? { rut_cliente: clienteId } : {},
             include: [
-                { model: Cliente, as: 'cliente' },
-                { model: Veterinario, as: 'veterinario', attributes: ['email', 'nombre', 'especialidad'] }
+                { model: Cliente, as: 'cliente' }
             ]
         });
         console.log('✅ Mascotas encontradas:', mascotas.length);
@@ -72,8 +77,7 @@ export const obtenerMascota = async (request: Request, response: Response) => {
     try {
         const mascota = await Mascota.findByPk(id, {
             include: [
-                { model: Cliente, as: 'cliente' },
-                { model: Veterinario, as: 'veterinario', attributes: ['email', 'nombre', 'especialidad'] }
+                { model: Cliente, as: 'cliente' }
             ]
         });
         if (!mascota) {
@@ -89,7 +93,7 @@ export const obtenerMascota = async (request: Request, response: Response) => {
 // Modificar mascota
 export const modificarMascota = async (request: Request, response: Response) => {
     const { id } = request.params;
-    const { rut_cliente, id_veterinario, nombre, especie, raza, edad, peso, sexo } = request.body;
+    const { rut_cliente, nombre, especie, raza, edad, peso, sexo } = request.body;
     
     try {
         const mascota = await Mascota.findByPk(id);
@@ -99,7 +103,6 @@ export const modificarMascota = async (request: Request, response: Response) => 
         }
 
         if (rut_cliente !== undefined) mascota.rut_cliente = rut_cliente;
-        if (id_veterinario !== undefined) mascota.id_veterinario = id_veterinario;
         if (nombre !== undefined) mascota.nombre = nombre;
         if (especie !== undefined) mascota.especie = especie;
         if (raza !== undefined) mascota.raza = raza;

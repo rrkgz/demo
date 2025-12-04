@@ -9,9 +9,8 @@ class Reserva extends Model {
     @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
     declare id_reserva: number;
 
-    @ForeignKey(() => Cliente)
-    @Column({ type: DataType.INTEGER, allowNull: false })
-    declare rut_cliente: number;
+    @Column({ type: DataType.STRING(12), allowNull: true })
+    declare rut_cliente: string | null;
 
     @ForeignKey(() => Mascota)
     @Column({ type: DataType.INTEGER, allowNull: false })
@@ -30,9 +29,6 @@ class Reserva extends Model {
 
     @Column({ type: DataType.TIME, allowNull: false })
     declare hora: string;
-
-    @BelongsTo(() => Cliente)
-    declare cliente: Cliente;
 
     @BelongsTo(() => Mascota)
     declare mascota: Mascota;

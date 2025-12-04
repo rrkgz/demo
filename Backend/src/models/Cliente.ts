@@ -6,6 +6,9 @@ class Cliente extends Model {
     @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
     declare id_cliente: number;
 
+    @Column({ type: DataType.STRING(12), allowNull: true, unique: true })
+    declare rut: string | null;
+
     @Column({ type: DataType.STRING, allowNull: false })
     declare nombre: string;
 

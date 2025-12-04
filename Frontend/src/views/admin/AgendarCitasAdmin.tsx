@@ -294,6 +294,7 @@ export default function AgendarCitasAdmin() {
                         <h6 className="mb-2 fw-bold text-primary">{r.mascota?.nombre || 'Mascota'}</h6>
                         <small className="d-block text-muted">
                           <p className="mb-1"><strong>Cliente:</strong> {r.cliente?.nombre}</p>
+                          <p className="mb-1"><strong>RUT Cliente:</strong> {r.cliente?.rut || 'N/A'}</p>
                           <p className="mb-1"><strong>Veterinario:</strong> Dr. {r.veterinario?.nombre}</p>
                           <p className="mb-1"><strong>Servicio:</strong> {r.servicio?.nombre}</p>
                           <p className="mb-0"><strong>Fecha y Hora:</strong> {new Date(r.fecha).toLocaleDateString('es-CL')} - {r.hora}</p>

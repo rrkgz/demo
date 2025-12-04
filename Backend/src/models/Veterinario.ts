@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt';
 import { BeforeCreate, Column, DataType, Model, Table, HasMany } from 'sequelize-typescript';
-import Mascota from './Mascota';
 import Reserva from './Reserva';
 
 @Table({ tableName: 'veterinarios' })
@@ -24,9 +23,6 @@ class Veterinario extends Model {
     static async hashPassword(veterinario: Veterinario) {
         veterinario.password = await bcrypt.hash(veterinario.password, 10);
     }
-
-    @HasMany(() => Mascota)
-    declare mascotas: Mascota[];
 
     @HasMany(() => Reserva)
     declare reservas: Reserva[];

@@ -57,40 +57,57 @@ export const inicioSesion = async(request: Request, response: Response)=>{
 
 
 export const crearUsuario = async (request: Request, response: Response) => {
-    const { email, password, nombre, direccion, telefono } = request.body;
-    if (!email || !password) {
-        response.status(400).json({ error: 'Email y contraseña son obligatorios' });
+    const { email, password, rut, nombre, direccion, telefono } = request.body;
+    
+    console.log('\n👤 ===== CREAR USUARIO =====');
+    console.log('📧 Email:', email);
+    console.log('📋 RUT:', rut);
+    console.log('👨 Nombre:', nombre);
+    
+    if (!email || !password || !rut || !nombre) {
+        console.log('❌ Datos incompletos');
+        response.status(400).json({ error: 'Email, contraseña, RUT y nombre son obligatorios' });
         return;
     }
 
     try {
         const existente = await Usuario.findByPk(email);
         if (existente) {
+            console.log('❌ Email ya registrado');
             response.status(400).json({ error: 'Ese email ya está registrado' });
             return;
         }
 
-        console.log('Creando usuario:', { email });
+        console.log('✅ Creando nuevo usuario...');
 
-        const nuevoUsuario = await Usuario.create({ email, password });
+        const nuevoUsuario = await Usuario.create({ 
+            email, 
+            password,
+            rut_cliente: rut,
+            nombre,
+            direccion: direccion || '',
+            telefono: telefono || ''
+        });
 
         // Crear cliente asociado automáticamente
         const Cliente = require('../models/Cliente').default;
-        await Cliente.create({
-            nombre: nombre || 'Usuario',
+        const cliente = await Cliente.create({
+            rut: rut,
+            nombre: nombre,
             direccion: direccion || 'Sin dirección',
             telefono: telefono || 'Sin teléfono',
             email: email
         });
 
-        console.log('Usuario y cliente creados:', email);
+        console.log('✅ Usuario creado:', email);
+        console.log('✅ Cliente creado con ID:', cliente.id_cliente, '\n');
         response.status(201).json({ message: 'Usuario creado correctamente' });
     } catch (error) {
-        console.error('Error al registrar usuario', error);
+        console.error('❌ Error al registrar usuario:', error);
         if (error instanceof Error) {
-            response.status(500).json({ error: 'Error interno del servidor', detalle: error.message, stack: error.stack });
+            response.status(500).json({ error: 'Error interno del servidor', detalle: error.message });
         } else {
-            response.status(500).json({ error: 'Error interno del servidor', detalle: error });
+            response.status(500).json({ error: 'Error interno del servidor' });
         }
     }
 };
