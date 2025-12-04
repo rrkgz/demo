@@ -60,19 +60,15 @@ const HistorialClinico: React.FC = () => {
 
       const reservasData: Reserva[] = await resReservas.json();
       
-      // Filtrar para mostrar solo visitas completadas (fecha pasada)
-      const ahora = new Date();
-      console.log('📅 Ahora:', ahora);
       console.log('📊 Total de reservas obtenidas:', reservasData.length);
-      console.log('📋 Reservas:', JSON.stringify(reservasData, null, 2));
+      console.log('📋 Reservas data:', reservasData);
       
-      const visitasCompletadas = reservasData.filter(r => {
-        const fechaReserva = new Date(`${r.fecha}T${r.hora}`);
-        console.log(`✓ ${r.fecha} ${r.hora} = ${fechaReserva} (¿Pasada? ${fechaReserva <= ahora})`);
-        return fechaReserva <= ahora;
-      }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+      // Filtrar para mostrar solo visitas completadas (fecha pasada)
+      // Por ahora mostrar TODAS para debuggear
+      const visitasCompletadas = reservasData
+        .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
-      console.log('✅ Visitas completadas:', visitasCompletadas.length);
+      console.log('✅ Visitas a mostrar:', visitasCompletadas.length);
       setReservas(visitasCompletadas);
 
       // Extraer mascotas únicas
