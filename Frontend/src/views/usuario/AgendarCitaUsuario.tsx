@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000/api';
+
+
+interface Cita {
+  id_reserva: number;
+  id_mascota: number;
+  id_veterinario: number;
+  id_servicio: number;
+  fecha: string; 
+  hora: string; 
+}
 
 interface Mascota {
   id_mascota: number;
@@ -11,6 +22,7 @@ interface Mascota {
 }
 
 interface Veterinario {
+  id_veterinario: number;
   email: string;
   nombre: string;
   especialidad: string;
@@ -26,7 +38,20 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-export default function AgendarCitaUsuario() {
+interface AgendarCitaUsuarioProps {
+  appointmentId?: string; 
+}
+
+
+const initialFormData = {
+  id_mascota: '',
+  id_veterinario: '',
+  id_servicio: '',
+  fecha: '',
+  hora: ''
+};
+
+export default function AgendarCitaUsuario({ appointmentId }: AgendarCitaUsuarioProps) {
   const navigate = useNavigate();
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
   const [veterinarios, setVeterinarios] = useState<Veterinario[]>([]);
@@ -35,25 +60,26 @@ export default function AgendarCitaUsuario() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [formData, setFormData] = useState({
-    id_mascota: '',
-    id_veterinario: '',
-    id_servicio: '',
-    fecha: '',
-    hora: ''
-  });
+
+  const [isEditing, setIsEditing] = useState(!!appointmentId);
+
+  const [formData, setFormData] = useState(initialFormData);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
+ 
+    setIsEditing(!!appointmentId);
     cargarDatos();
-  }, []);
+  }, [appointmentId]); 
 
   const cargarDatos = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
+  
       const [mascotasRes, veterinariosRes, serviciosRes] = await Promise.all([
         fetch(`${API_URL}/mascotas`, { headers }),
         fetch(`${API_URL}/veterinarios`, { headers }),
@@ -61,7 +87,7 @@ export default function AgendarCitaUsuario() {
       ]);
 
       if (!mascotasRes.ok || !veterinariosRes.ok || !serviciosRes.ok) {
-        throw new Error('Error cargando datos');
+        throw new Error('Error cargando listas de datos');
       }
 
       const mascotasData = await mascotasRes.json();
@@ -71,9 +97,30 @@ export default function AgendarCitaUsuario() {
       setMascotas(Array.isArray(mascotasData) ? mascotasData : []);
       setVeterinarios(Array.isArray(veterinariosData) ? veterinariosData : []);
       setServicios(Array.isArray(serviciosData) ? serviciosData : []);
+      
+  
+      if (appointmentId) {
+        const citaRes = await fetch(`${API_URL}/reservas/${appointmentId}`, { headers });
+        if (!citaRes.ok) throw new Error('Error cargando cita existente');
+        
+        const citaData: Cita = await citaRes.json();
+        
+     
+        setFormData({
+          id_mascota: String(citaData.id_mascota),
+          id_veterinario: String(citaData.id_veterinario),
+          id_servicio: String(citaData.id_servicio),
+          fecha: citaData.fecha,
+          hora: citaData.hora,
+        });
+        setCurrentMonth(new Date(citaData.fecha + 'T00:00:00')); 
+      } else {
+        setFormData(initialFormData); 
+      }
+
       setLoading(false);
     } catch (err) {
-      setError('Error cargando datos del servidor');
+      setError('Error cargando datos del servidor. Intenta recargar.');
       setLoading(false);
       console.error(err);
     }
@@ -84,6 +131,7 @@ export default function AgendarCitaUsuario() {
     setError('');
     setSuccess('');
 
+
     if (!formData.id_mascota || !formData.id_veterinario || !formData.id_servicio || !formData.fecha || !formData.hora) {
       setError('Por favor completa todos los campos');
       return;
@@ -91,8 +139,13 @@ export default function AgendarCitaUsuario() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/reservas`, {
-        method: 'POST',
+      const method = isEditing ? 'PUT' : 'POST';
+      const url = isEditing 
+        ? `${API_URL}/reservas/${appointmentId}` 
+        : `${API_URL}/reservas`;
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -101,18 +154,16 @@ export default function AgendarCitaUsuario() {
       });
 
       if (response.ok) {
-        setSuccess('¡Cita agendada exitosamente!');
-        setFormData({
-          id_mascota: '',
-          id_veterinario: '',
-          id_servicio: '',
-          fecha: '',
-          hora: ''
-        });
+        setSuccess(`¡Cita ${isEditing ? 'actualizada' : 'agendada'} exitosamente!`);
+        if (!isEditing) {
+          
+          setFormData(initialFormData);
+        }
+        
         setTimeout(() => navigate('/mis-citas'), 2000);
       } else {
         const errorData = await response.json();
-        setError(errorData.message || 'Error al agendar la cita');
+        setError(errorData.message || `Error al ${isEditing ? 'actualizar' : 'agendar'} la cita`);
       }
     } catch (err) {
       setError('Error al conectar con el servidor');
@@ -137,7 +188,7 @@ export default function AgendarCitaUsuario() {
   };
 
   const handleSelectDate = (day: number) => {
-    // Crear fecha en hora local para evitar problemas de zona horaria
+  
     const year = currentMonth.getFullYear();
     const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
@@ -175,11 +226,13 @@ export default function AgendarCitaUsuario() {
     if (i < 19) hours.push(`${String(i).padStart(2, '0')}:30`);
   }
 
-  if (loading) return <div className="container py-5 text-center">Cargando...</div>;
+  if (loading) return <div className="container py-5 text-center">Cargando datos...</div>;
 
   return (
     <div className="container py-5">
-      <h2 className="fw-bold mb-4">Agendar una Cita</h2>
+      <h2 className="fw-bold mb-4">
+        {isEditing ? 'Modificar Cita Existente' : 'Agendar una Nueva Cita'}
+      </h2>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -199,7 +252,9 @@ export default function AgendarCitaUsuario() {
         <div className="col-lg-6">
           <div className="card shadow-sm border-0">
             <div className="card-body p-4">
-              <h5 className="card-title fw-bold mb-4">Completa tu reserva</h5>
+              <h5 className="card-title fw-bold mb-4">
+                {isEditing ? `Editando Cita #${appointmentId}` : 'Completa tu reserva'}
+              </h5>
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Mi Mascota</label>
@@ -225,12 +280,14 @@ export default function AgendarCitaUsuario() {
                     value={formData.id_veterinario}
                     onChange={(e) => {
                       const vetId = e.target.value;
-                      const vet = veterinarios.find(v => v.id_veterinario === parseInt(vetId));
-                      // Buscar servicio que coincida con la especialidad
+                      const vet = veterinarios.find(v => String(v.id_veterinario) === vetId);
+                      
+                      
                       const servicioMatch = vet ? servicios.find(s => 
                         s.nombre.toLowerCase().includes(vet.especialidad.toLowerCase()) ||
                         vet.especialidad.toLowerCase().includes(s.nombre.toLowerCase())
                       ) : null;
+                      
                       setFormData({ 
                         ...formData, 
                         id_veterinario: vetId,
@@ -241,7 +298,7 @@ export default function AgendarCitaUsuario() {
                   >
                     <option value="">Selecciona un veterinario...</option>
                     {veterinarios.map(v => (
-                      <option key={v.email} value={v.email}>
+                      <option key={v.id_veterinario} value={v.id_veterinario}>
                         {v.nombre} - {v.especialidad}
                       </option>
                     ))}
@@ -270,7 +327,11 @@ export default function AgendarCitaUsuario() {
                   <input
                     type="text"
                     className="form-control form-control-lg bg-light"
-                    value={formData.fecha ? new Date(formData.fecha + 'T00:00:00').toLocaleDateString('es-CL') : 'Selecciona una fecha'}
+                
+                    value={formData.fecha 
+                      ? new Date(formData.fecha + 'T00:00:00').toLocaleDateString('es-CL') 
+                      : 'Selecciona una fecha'
+                    }
                     disabled
                   />
                 </div>
@@ -287,11 +348,11 @@ export default function AgendarCitaUsuario() {
 
                 <button
                   type="submit"
-                  className="btn btn-primary btn-lg w-100 fw-bold"
+                  className={`btn btn-${isEditing ? 'success' : 'primary'} btn-lg w-100 fw-bold`}
                   disabled={!formData.id_mascota || !formData.id_veterinario || !formData.id_servicio || !formData.fecha || !formData.hora}
                 >
                   <span className="bi bi-calendar-check me-2"></span>
-                  Agendar Cita
+                  {isEditing ? 'Actualizar Cita' : 'Agendar Cita'}
                 </button>
               </form>
             </div>
@@ -346,8 +407,8 @@ export default function AgendarCitaUsuario() {
                                     isSelected
                                       ? 'btn-primary'
                                       : isDisabled
-                                      ? 'btn-outline-secondary disabled text-muted'
-                                      : 'btn-outline-primary'
+                                        ? 'btn-outline-secondary disabled text-muted'
+                                        : 'btn-outline-primary'
                                   }`}
                                   disabled={isDisabled}
                                 >
