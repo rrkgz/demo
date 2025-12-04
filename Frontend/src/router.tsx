@@ -1,23 +1,23 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./layouts/Layouts";
-import InicioSesion from "./views/Login/InicioSesion";
-import InicioSesionAdmin from "./views/Login/InicioSesionAdmin";
-import CrearCuenta from "./views/Login/CrearCuenta";
-import CambiarPassword from "./views/Login/CambiarPassword";
+import InicioSesion from "./views/auth/InicioSesion";
+import InicioSesionAdmin from "./views/auth/InicioSesionAdmin";
+import CrearCuenta from "./views/auth/CrearCuenta";
+import CambiarPassword from "./views/auth/CambiarPassword";
 import PrivateRoute from "./components/PrivateRouter";
 import PrivateRouteAdmin from "./components/PrivateRouteAdmin";
-import AdminUsuarios from "./views/AdminUsuarios";
-import AgendarCitas from "./views/Login/agendarcita";
-import MenuPrincipal from "./views/MenuPrincipal";
-import CuentaUsuario from "./views/CuentaUsuario";
-import PanelAdmin from "./views/PanelAdmin";
-import AdminVeterinarios from "./views/AdminVeterinarios";
-import { GestionClientes } from "./views/GestionCliente";
-import { GestionMascotas } from "./views/GestionMascota";
-import { GestionTratamientos } from "./views/Tratamientos";
-import { CatalogoProductos } from "./views/catalogo";
-import { BoletaVeterinaria } from "./views/Boleta";
-import { ReportesVeterinaria } from "./views/Reporte";
+import AdminUsuarios from "./views/admin/AdminUsuarios";
+import AgendarCitas from "./views/usuario/agendarcita";
+import MenuPrincipal from "./views/usuario/MenuPrincipal";
+import CuentaUsuario from "./views/usuario/CuentaUsuario";
+import PanelAdmin from "./views/admin/PanelAdmin";
+import AdminVeterinarios from "./views/admin/AdminVeterinarios";
+import { GestionClientes } from "./views/admin/GestionCliente";
+import { GestionMascotas } from "./views/admin/GestionMascota";
+import { GestionTratamientos } from "./views/admin/Tratamientos";
+import { CatalogoProductos } from "./views/usuario/catalogo";
+import { BoletaVeterinaria } from "./views/admin/Boleta";
+import { ReportesVeterinaria } from "./views/admin/Reporte";
 
 
 //aaaaaaaaa

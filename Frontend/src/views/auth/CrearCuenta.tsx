@@ -5,8 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 export default function CrearCuenta() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  const [petName, setPetName] = useState(''); 
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const navigate = useNavigate();
@@ -15,19 +13,12 @@ export default function CrearCuenta() {
     e.preventDefault();
     setError('');
     setOk('');
-    
-  
-    if (!petName.trim()) {
-        setError('Por favor, ingresa el nombre de tu mascota.');
-        return;
-    }
 
     try {
       const res = await fetch(`${API_URL}/crear-cuenta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        
-        body: JSON.stringify({ email, password, petName }) 
+        body: JSON.stringify({ email, password }) 
       });
       
       const data = await res.json();
@@ -71,19 +62,6 @@ export default function CrearCuenta() {
               className="form-control" 
               value={password} 
               onChange={e => setPassword(e.target.value)} 
-              required 
-            />
-          </div>
-          
-      
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Nombre de tu Mascota</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={petName} 
-              onChange={e => setPetName(e.target.value)} 
-              placeholder="Ej: Max, Luna, Toby"
               required 
             />
           </div>

@@ -7,8 +7,6 @@ export default function Layout() {
         location.pathname === '/iniciar-sesion' ||
         location.pathname === '/iniciar-sesion-admin' ||
         location.pathname === '/crear-cuenta' ||
-        location.pathname === '/cambiar-pass' ||
-        location.pathname === '/menu-principal' ||
         location.pathname === '/panel-admin';
     return (
         <>

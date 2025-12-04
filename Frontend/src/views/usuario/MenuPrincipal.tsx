@@ -1,16 +1,19 @@
 import { Link } from 'react-router-dom';
+import ImageCarousel from '../../components/ImageCarousel';
+
+// Acepta cualquier formato: .jpg, .jpeg, .png, .gif, .webp
+const carouselImages = [
+  '/images/descarga.png',
+  '/images/gatito2.png',
+  '/images/gatito3.png',
+  '/images/perrito1.png',
+  '/images/perrito2.png',
+  '/images/perrito3.png',
+];
 
 export default function MenuPrincipal() {
   return (
     <div className="min-vh-100 bg-light d-flex flex-column">
-      {/* TopBar morada */}
-      <div className="text-white py-3 shadow-sm" style={{ backgroundColor: '#7b2cbf' }}>
-        <div className="container d-flex align-items-center justify-content-between">
-          <h1 className="h4 mb-0 fw-bold">Veterinaria Laumar</h1>
-          <a href="#contacto" className="btn btn-outline-light btn-sm">Contacto</a>
-        </div>
-      </div>
-
       {/* Hero principal */}
       <div className="container py-5">
         <div className="row align-items-center gy-4">
@@ -28,7 +31,7 @@ export default function MenuPrincipal() {
             </ul>
           </div>
           <div className="col-lg-5">
-            <div className="ratio ratio-4x3 rounded-4 shadow-sm" style={{ backgroundImage: `url('https://images..com/photo-1559440167-1148eecee05e?q=80&w=1200&auto=format&fi=crop')`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            <ImageCarousel images={carouselImages} />
           </div>
         </div>
       </div>

@@ -6,8 +6,8 @@ export default function NavBar() {
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
       <div className="container-fluid">
         <NavLink to="/" className="navbar-brand fw-bold d-flex align-items-center gap-2" style={{ fontSize: 24, letterSpacing: 1 }}>
-          <span className="bi bi-gem" style={{ fontSize: 28 }}></span>
-          Proyecto TSI
+          <span className="bi bi-heart-pulse-fill" style={{ fontSize: 28 }}></span>
+          Veterinaria Laumar
         </NavLink>
         <button
           className="navbar-toggler"
