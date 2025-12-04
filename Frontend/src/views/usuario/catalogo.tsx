@@ -11,58 +11,58 @@ interface Producto {
 const productosVeterinaria: Producto[] = [
   {
     id: 1,
-    nombre: 'Alimento Premium para Perros',
-    descripcion: 'Croquetas de alta calidad con proteínas naturales, vitaminas y minerales esenciales para perros adultos.',
-    imagen: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400&h=300&fit=crop',
-    categoria: 'Alimentos'
+    nombre: 'Séxtuple',
+    descripcion: 'proporciona protección contra seis de las enfermedades virales y bacterianas más comunes y peligrosas para los perros.',
+    imagen: 'https://cdn0.expertoanimal.com/es/posts/0/7/5/las_reacciones_postvacunales_en_perros_mas_frecuentes_22570_orig.jpg',
+    categoria: 'Vacunas'
   },
   {
     id: 2,
-    nombre: 'Alimento para Gatos',
-    descripcion: 'Alimento balanceado especialmente formulado para gatos, con taurina y omega 3 para una salud óptima.',
-    imagen: 'https://images.unsplash.com/photo-1589652717521-10c0d092dea9?w=400&h=300&fit=crop',
-    categoria: 'Alimentos'
+    nombre: 'Antirrabica',
+    descripcion: 'estimular el sistema inmunológico del cuerpo para producir anticuerpos contra el virus de la rabia.',
+    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWbGsntuS6iQ5ed0SZ7XoXuCn1IEAlnrw7kg&s',
+    categoria: 'Vacunas'
   },
   {
     id: 3,
-    nombre: 'Collar Antiparasitario',
-    descripcion: 'Protección efectiva contra pulgas y garrapatas por hasta 8 meses. Resistente al agua.',
-    imagen: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=400&h=300&fit=crop',
-    categoria: 'Accesorios'
+    nombre: 'Triple felina',
+    descripcion: 'vacuna que protege a los gatos contra tres enfermedades.',
+    imagen: 'https://www.universodelasaludanimal.com/wp-content/uploads/sites/61/2022/02/Vacina-para-leucemia-felina-sendo-aplicada-em-gato-filhote.jpg',
+    categoria: 'Vacunas'
   },
   {
     id: 4,
-    nombre: 'Shampoo Medicado',
-    descripcion: 'Shampoo hipoalergénico para mascotas con piel sensible. Con aloe vera y avena coloidal.',
-    imagen: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=300&fit=crop',
-    categoria: 'Higiene'
+    nombre: 'Consulta',
+    descripcion: 'se revisará el estado general de salud de la mascota.',
+    imagen: 'https://i0.wp.com/puppis.blog/wp-content/uploads/2021/08/Cardiopatia-en-Perros-y-Gatos.jpg?resize=900%2C600&ssl=1',
+    categoria: 'informe'
   },
   {
     id: 5,
-    nombre: 'Cama Ortopédica',
-    descripcion: 'Cama con espuma de memoria para mascotas senior o con problemas articulares. Funda lavable.',
-    imagen: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=300&fit=crop',
-    categoria: 'Accesorios'
+    nombre: 'MicroChip',
+    descripcion: 'ayuda a identificar a su mascota mediante un código de identificación única.',
+    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTD8v9nA90P8xcFLkctLTONX_EtCj-bmKpDHQ&s',
+    categoria: 'Vacunas'
   },
   {
     id: 6,
-    nombre: 'Kit de Cepillado Dental',
-    descripcion: 'Set completo con cepillo, pasta dental y juguetes para mantener la higiene bucal de tu mascota.',
-    imagen: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=400&h=300&fit=crop',
+    nombre: 'Corte de uñas',
+    descripcion: 'ayuda al bienestar de tu mascota para que este mas limpio.',
+    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTiWZkl1pvWfTa5-YF9DPAYab2dUDPiTzAG7A&s',
     categoria: 'Higiene'
   },
   {
     id: 7,
-    nombre: 'Juguetes Interactivos',
-    descripcion: 'Set de juguetes diseñados para estimular la mente de tu mascota y mantenerla activa.',
-    imagen: 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop',
+    nombre: 'Baño',
+    descripcion: 'baño completo a mascota.',
+    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXyyY2OnxhliHOCAq-IHZNdZojyzXgUGpGyw&s',
     categoria: 'Juguetes'
   },
   {
     id: 8,
-    nombre: 'Transportadora Premium',
-    descripcion: 'Transportadora espaciosa y segura, ideal para viajes. Aprobada para aerolíneas.',
-    imagen: 'https://images.unsplash.com/photo-1581888227599-779811939961?w=400&h=300&fit=crop',
+    nombre: 'peluqueria',
+    descripcion: 'cortes de pelo para cuidar el bienestar de su mascota.',
+    imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXmoYyV5rWANRklPeDaiWtyiZwYke17fFwBA&s',
     categoria: 'Accesorios'
   }
 ];
