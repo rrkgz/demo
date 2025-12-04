@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000/api';
+
+
+interface Cita {
+  id_reserva: number;
+  id_mascota: number;
+  id_veterinario: number;
+  id_servicio: number;
+  fecha: string; 
+  hora: string; 
+}
 
 interface Mascota {
   id_mascota: number;
@@ -11,6 +22,7 @@ interface Mascota {
 }
 
 interface Veterinario {
+  id_veterinario: number;
   email: string;
   nombre: string;
   especialidad: string;
@@ -33,7 +45,20 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-export default function AgendarCitaUsuario() {
+interface AgendarCitaUsuarioProps {
+  appointmentId?: string; 
+}
+
+
+const initialFormData = {
+  id_mascota: '',
+  id_veterinario: '',
+  id_servicio: '',
+  fecha: '',
+  hora: ''
+};
+
+export default function AgendarCitaUsuario({ appointmentId }: AgendarCitaUsuarioProps) {
   const navigate = useNavigate();
   const [mascotas, setMascotas] = useState<Mascota[]>([]);
   const [veterinarios, setVeterinarios] = useState<Veterinario[]>([]);
@@ -50,13 +75,20 @@ export default function AgendarCitaUsuario() {
     hora: ''
   });
 
+  const [isEditing, setIsEditing] = useState(!!appointmentId);
+
+  const [formData, setFormData] = useState(initialFormData);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
+ 
+    setIsEditing(!!appointmentId);
     cargarDatos();
-  }, []);
+  }, [appointmentId]); 
 
   const cargarDatos = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
@@ -83,7 +115,7 @@ export default function AgendarCitaUsuario() {
       setReservas(Array.isArray(reservasData) ? reservasData : []);
       setLoading(false);
     } catch (err) {
-      setError('Error cargando datos del servidor');
+      setError('Error cargando datos del servidor. Intenta recargar.');
       setLoading(false);
       console.error(err);
     }
@@ -142,7 +174,7 @@ export default function AgendarCitaUsuario() {
         setTimeout(() => navigate('/mis-citas'), 2000);
       } else {
         const errorData = await response.json();
-        setError(errorData.message || 'Error al agendar la cita');
+        setError(errorData.message || `Error al ${isEditing ? 'actualizar' : 'agendar'} la cita`);
       }
     } catch (err) {
       setError('Error al conectar con el servidor');
@@ -167,7 +199,7 @@ export default function AgendarCitaUsuario() {
   };
 
   const handleSelectDate = (day: number) => {
-    // Crear fecha en hora local para evitar problemas de zona horaria
+  
     const year = currentMonth.getFullYear();
     const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
@@ -243,7 +275,9 @@ export default function AgendarCitaUsuario() {
 
   return (
     <div className="container py-5">
-      <h2 className="fw-bold mb-4">Agendar una Cita</h2>
+      <h2 className="fw-bold mb-4">
+        {isEditing ? 'Modificar Cita Existente' : 'Agendar una Nueva Cita'}
+      </h2>
 
       {error && (
         <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -263,7 +297,9 @@ export default function AgendarCitaUsuario() {
         <div className="col-lg-6">
           <div className="card shadow-sm border-0">
             <div className="card-body p-4">
-              <h5 className="card-title fw-bold mb-4">Completa tu reserva</h5>
+              <h5 className="card-title fw-bold mb-4">
+                {isEditing ? `Editando Cita #${appointmentId}` : 'Completa tu reserva'}
+              </h5>
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Mi Mascota</label>
@@ -292,7 +328,7 @@ export default function AgendarCitaUsuario() {
                   >
                     <option value="">Selecciona un veterinario...</option>
                     {veterinarios.map(v => (
-                      <option key={v.email} value={v.email}>
+                      <option key={v.id_veterinario} value={v.id_veterinario}>
                         {v.nombre} - {v.especialidad}
                       </option>
                     ))}
@@ -314,7 +350,11 @@ export default function AgendarCitaUsuario() {
                   <input
                     type="text"
                     className="form-control form-control-lg bg-light"
-                    value={formData.fecha ? new Date(formData.fecha + 'T00:00:00').toLocaleDateString('es-CL') : 'Selecciona una fecha'}
+                
+                    value={formData.fecha 
+                      ? new Date(formData.fecha + 'T00:00:00').toLocaleDateString('es-CL') 
+                      : 'Selecciona una fecha'
+                    }
                     disabled
                   />
                 </div>
@@ -335,7 +375,7 @@ export default function AgendarCitaUsuario() {
                   disabled={!formData.id_mascota || !formData.id_veterinario || !formData.fecha || !formData.hora}
                 >
                   <span className="bi bi-calendar-check me-2"></span>
-                  Agendar Cita
+                  {isEditing ? 'Actualizar Cita' : 'Agendar Cita'}
                 </button>
               </form>
             </div>
@@ -390,8 +430,8 @@ export default function AgendarCitaUsuario() {
                                     isSelected
                                       ? 'btn-primary'
                                       : isDisabled
-                                      ? 'btn-outline-secondary disabled text-muted'
-                                      : 'btn-outline-primary'
+                                        ? 'btn-outline-secondary disabled text-muted'
+                                        : 'btn-outline-primary'
                                   }`}
                                   disabled={isDisabled}
                                 >
